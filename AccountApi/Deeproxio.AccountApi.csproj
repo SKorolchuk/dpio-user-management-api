@@ -1,20 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
-    <DockerComposeProjectPath>..\docker-compose.dcproj</DockerComposeProjectPath>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Models\" />
-    <Folder Include="Views\Account\" />
-    <Folder Include="Views\Shared\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.3" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Redis" Version="2.0.0" />
-    <PackageReference Include="RabbitMQ.Client" Version="5.0.1" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="5.0.1" />
+    <PackageReference Include="FluentValidation.AspNetCore" Version="8.0.100" />
+    <PackageReference Include="Microsoft.AspNetCore.All" Version="2.1.5" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Redis" Version="2.1.2" />
+    <PackageReference Include="RabbitMQ.Client" Version="5.1.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,10 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Engine\ApiClients\OperationApiClient\Deeproxio.OperationApiClient.csproj" />
-    <ProjectReference Include="..\Engine\Domain\Deeproxio.Domain.csproj" />
+    <ProjectReference Include="..\Engine\Deeproxio.Persistence.Identity\Deeproxio.Persistence.Identity.csproj" />
     <ProjectReference Include="..\Engine\Infrastructure\Deeproxio.Infrastructure.csproj" />
-    <ProjectReference Include="..\Engine\Persistence\Deeproxio.Persistence.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-﻿using Deeproxio.Infrastructure;
+﻿using Deeproxio.Infrastructure.Runtime;
 using Microsoft.AspNetCore.Hosting;
 
 namespace Deeproxio.AccountApi
