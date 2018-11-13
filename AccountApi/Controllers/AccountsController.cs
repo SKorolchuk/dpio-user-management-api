@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using AutoMapper;
 using Deeproxio.AccountApi.Models;
+using Deeproxio.AccountApi.Models.Validations;
 using Deeproxio.Persistence.Identity.Context;
 using Deeproxio.Persistence.Identity.Identity;
 using Microsoft.AspNetCore.Authorization;

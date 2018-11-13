@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Deeproxio.Persistence.Confi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Deeproxio.Persistence.Identity", "Engine\Deeproxio.Persistence.Identity\Deeproxio.Persistence.Identity.csproj", "{43411A10-3C41-418F-B7A5-2CE1BE0C829A}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Deeproxio.Domain", "Engine\Domain\Deeproxio.Domain.csproj", "{D25E22A2-84CB-49E1-A2DE-3398ECE75496}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -73,6 +75,18 @@ Global
 		{43411A10-3C41-418F-B7A5-2CE1BE0C829A}.Release|x64.Build.0 = Release|Any CPU
 		{43411A10-3C41-418F-B7A5-2CE1BE0C829A}.Release|x86.ActiveCfg = Release|Any CPU
 		{43411A10-3C41-418F-B7A5-2CE1BE0C829A}.Release|x86.Build.0 = Release|Any CPU
+		{D25E22A2-84CB-49E1-A2DE-3398ECE75496}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D25E22A2-84CB-49E1-A2DE-3398ECE75496}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D25E22A2-84CB-49E1-A2DE-3398ECE75496}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D25E22A2-84CB-49E1-A2DE-3398ECE75496}.Debug|x64.Build.0 = Debug|Any CPU
+		{D25E22A2-84CB-49E1-A2DE-3398ECE75496}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D25E22A2-84CB-49E1-A2DE-3398ECE75496}.Debug|x86.Build.0 = Debug|Any CPU
+		{D25E22A2-84CB-49E1-A2DE-3398ECE75496}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D25E22A2-84CB-49E1-A2DE-3398ECE75496}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D25E22A2-84CB-49E1-A2DE-3398ECE75496}.Release|x64.ActiveCfg = Release|Any CPU
+		{D25E22A2-84CB-49E1-A2DE-3398ECE75496}.Release|x64.Build.0 = Release|Any CPU
+		{D25E22A2-84CB-49E1-A2DE-3398ECE75496}.Release|x86.ActiveCfg = Release|Any CPU
+		{D25E22A2-84CB-49E1-A2DE-3398ECE75496}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -82,6 +96,7 @@ Global
 		{AEB85BEE-B71A-4F07-8052-DDE0ADE0F85A} = {E62168AF-4A31-4FF9-88FD-A63264F6E775}
 		{91B4148A-4E14-4FDF-B2E7-4AA4321EFF01} = {E62168AF-4A31-4FF9-88FD-A63264F6E775}
 		{43411A10-3C41-418F-B7A5-2CE1BE0C829A} = {E62168AF-4A31-4FF9-88FD-A63264F6E775}
+		{D25E22A2-84CB-49E1-A2DE-3398ECE75496} = {E62168AF-4A31-4FF9-88FD-A63264F6E775}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {67A9FBA0-ADC2-488F-AD34-02CA3DE4D9BE}

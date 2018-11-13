@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Deeproxio.Persistence.Identity.Identity;
 
 namespace Deeproxio.AccountApi.Models.Mappings
 {
@@ -6,7 +7,7 @@ namespace Deeproxio.AccountApi.Models.Mappings
     {
         public ViewModelToEntityMappingProfile()
         {
-            CreateMap<RegistrationViewModel, AppUser>().ForMember(au => au.UserName, map => map.MapFrom(vm => vm.Email));
+            CreateMap<RegistrationViewModel, ApplicationUser>().ForMember(au => au.UserName, map => map.MapFrom(vm => vm.Email));
         }
     }
 }
