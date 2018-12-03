@@ -1,6 +1,17 @@
-FROM microsoft/aspnetcore:2.0
-ARG source
+FROM microsoft/dotnet:sdk AS build-env
 WORKDIR /app
-EXPOSE 80
-COPY ${source:-obj/Docker/publish} .
-ENTRYPOINT ["dotnet", "AIConception.AccountSvc.dll"]
+
+# Copy csproj and restore as distinct layers
+COPY . .
+RUN dotnet restore
+
+WORKDIR /app/AccountApi
+
+RUN dotnet publish -c Release -o out
+
+# Build runtime image
+FROM microsoft/dotnet:aspnetcore-runtime
+WORKDIR /app
+COPY --from=build-env /app/AccountApi/out .
+
+ENTRYPOINT ["dotnet", "Deeproxio.AccountApi.dll"]

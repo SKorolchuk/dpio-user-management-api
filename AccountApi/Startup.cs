@@ -34,7 +34,8 @@ namespace Deeproxio.AccountApi
 	        var builder = new ConfigurationBuilder()
 		        .SetBasePath(env.ContentRootPath)
 		        .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-		        .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
+		        .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
+	            .AddEnvironmentVariables();
 
 	        builder.AddEnvironmentVariables();
 	        Configuration = builder.Build();
@@ -117,12 +118,11 @@ namespace Deeproxio.AccountApi
 			builder.AddEntityFrameworkStores<IdentityDbContext>().AddDefaultTokenProviders();
 
 			services.AddAutoMapper();
+            services.AddCors();
 			services.AddMvc().AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<Startup>());
 
 			services.AddTransient<Infrastructure.Notification.IEmailSender, AuthMessageSender>();
 	        services.AddTransient<ISmsSender, AuthMessageSender>();
-
-            services.AddCors();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -135,7 +135,13 @@ namespace Deeproxio.AccountApi
 			}
 
 
-	        app.UseExceptionHandler(
+            app.UseCors(builder => builder
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials());
+
+            app.UseExceptionHandler(
 		        builder =>
 		        {
 			        builder.Run(
@@ -157,7 +163,7 @@ namespace Deeproxio.AccountApi
 			app.UseAuthentication();
 			app.UseDefaultFiles();
 			app.UseStaticFiles();
-	        app.UseMvc();
+            app.UseMvc();
 		}
     }
 }
