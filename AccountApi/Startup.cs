@@ -36,11 +36,9 @@ namespace Deeproxio.AccountApi
 		        .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
 		        .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
 	            .AddEnvironmentVariables();
-
-	        builder.AddEnvironmentVariables();
 	        Configuration = builder.Build();
 
-	        secretKey = Configuration.GetValue("SecretKey", "iNivDmHLpUA223sqsfhqGbMRdRj1PVkH");
+	        secretKey = Configuration.GetValue("JwtIssuerOptions::SecretKey", "iNivDmHLpUA223sqsfhqGbMRdRj1PVkH");
 			signingKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secretKey));
 		}
 
@@ -71,10 +69,10 @@ namespace Deeproxio.AccountApi
 
 			var tokenValidationParameters = new TokenValidationParameters
 			{
-				ValidateIssuer = true,
+				ValidateIssuer = false,
 				ValidIssuer = jwtAppSettingOptions[nameof(JwtIssuerOptions.Issuer)],
 
-				ValidateAudience = true,
+				ValidateAudience = false,
 				ValidAudience = jwtAppSettingOptions[nameof(JwtIssuerOptions.Audience)],
 
 				ValidateIssuerSigningKey = true,
@@ -86,14 +84,10 @@ namespace Deeproxio.AccountApi
 			};
 
 			services
-				.AddAuthentication(options =>
-				{
-					options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-					options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-				})
+				.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 				.AddJwtBearer(configureOptions =>
 				{
-					configureOptions.ClaimsIssuer = jwtAppSettingOptions[nameof(JwtIssuerOptions.Issuer)];
+				    configureOptions.ClaimsIssuer = jwtAppSettingOptions[nameof(JwtIssuerOptions.Issuer)];
 					configureOptions.TokenValidationParameters = tokenValidationParameters;
 					configureOptions.SaveToken = true;
 				});
