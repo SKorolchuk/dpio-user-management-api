@@ -23,7 +23,7 @@ Technologies: `ASP.NET Core`, `Entity Framework Core`, `ASP.NET Core Identity`, 
   docker run -d --name dpio-accountapi --restart always -p 4300:80 --link test-postgres-server -e ConnectionStrings__DomainContext=Host=test-postgres-server;Database=dpio-main-db;Username=admin;Password=12345678 -e ConnectionStrings__DefaultConnection=Host=test-postgres-server;Database=dpio-main-db;Username=admin;Password=12345678 -e ConnectionStrings__IdentityDbContext=Host=test-postgres-server;Database=dpio-user-db;Username=admin;Password=12345678 -e ENVIRONMENT=Production dpio-accountapi:latest
   ```
 
-  P.S. `test-postgres-server` is `Postgres` DB container deployed in the same docker environment. Replace to any corrent name if it's need. Also replace `Username` and `Password` to correct DB user settings.
+  P.S. `test-postgres-server` is `Postgres` DB container deployed in the same docker environment. Replace to any correct name if it's need. Also replace `Username` and `Password` to correct DB user settings.
 
 - Migration image preparation
 
@@ -37,4 +37,4 @@ Technologies: `ASP.NET Core`, `Entity Framework Core`, `ASP.NET Core Identity`, 
   # run interactive container session after image build
   docker run -it --rm --name dpio-accountapi-migration --link test-postgres-server -e ConnectionStrings__IdentityDbContext=Host=test-postgres-server;Database=dpio-user-db;Username=admin;Password=12345678 -e ENVIRONMENT=Production dpio-accountapi-db-migration:latest dotnet ef database update
   ```
-  P.S. `test-postgres-server` is `Postgres` DB container deployed in the same docker environment. Replace to any corrent name if it's need. Also replace `Username` and `Password` to correct DB user settings.
+  P.S. `test-postgres-server` is `Postgres` DB container deployed in the same docker environment. Replace to any correct name if it's need. Also replace `Username` and `Password` to correct DB user settings.
