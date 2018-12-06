@@ -15,12 +15,13 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Deeproxio.AccountApi
 {
@@ -117,11 +118,28 @@ namespace Deeproxio.AccountApi
 
 			services.AddTransient<Infrastructure.Notification.IEmailSender, AuthMessageSender>();
 	        services.AddTransient<ISmsSender, AuthMessageSender>();
+
+            services.AddHealthChecks()
+                .AddDbContextCheck<IdentityDbContext>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
+            app.UseHealthChecks("/ready", new HealthCheckOptions()
+            {
+                // The following StatusCodes are the default assignments for
+                // the HealthCheckStatus properties.
+                ResultStatusCodes =
+                {
+                    [HealthStatus.Healthy] = StatusCodes.Status200OK,
+                    [HealthStatus.Degraded] = StatusCodes.Status200OK,
+                    [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
+                },
+                // The default value is false.
+                AllowCachingResponses = false
+            });
+
             if (env.IsDevelopment())
             {
 				app.UseDeveloperExceptionPage();

@@ -1,0 +1,16 @@
+FROM microsoft/dotnet:2.2-sdk
+WORKDIR /migration
+
+# Copy csproj and restore as distinct layers
+COPY . ./
+COPY Engine/ ./Engine/
+COPY Engine/Deeproxio.Persistence.Identity/ ./Engine/Deeproxio.Persistence.Identity/
+
+WORKDIR /migration/Engine
+
+RUN dotnet restore
+
+WORKDIR /migration/Engine/Deeproxio.Persistence.Identity
+
+RUN dotnet restore
+RUN dotnet build
