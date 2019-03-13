@@ -7,7 +7,7 @@ namespace Deeproxio.AccountApi
     {
 		public static void Main(string[] args)
         {
-	        using (var server = new SelfHostServerBuilder<Startup>(args))
+	        using (var server = new SelfHostServerBuilder<Startup>(args, 8080))
 			{
 		        server.Build().Run();
 	        }
