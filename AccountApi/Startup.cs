@@ -21,7 +21,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Deeproxio.AccountApi
 {
@@ -153,6 +152,17 @@ namespace Deeproxio.AccountApi
                 // The default value is false.
                 AllowCachingResponses = false
             });
+
+            app.UseMetricServer();
+
+            if (!string.IsNullOrEmpty(Configuration["PrometheusPushGateway"]))
+            {
+                var metricServer = new MetricPusher(
+                    endpoint: Configuration["PrometheusPushGateway"],
+                    job: $"{Dns.GetHostName()}_metric_job"
+                );
+                metricServer.Start();
+            }
 
             if (env.IsDevelopment())
             {
