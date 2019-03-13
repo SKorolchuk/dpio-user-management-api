@@ -21,6 +21,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.IdentityModel.Tokens;
+using Prometheus;
 
 namespace Deeproxio.AccountApi
 {
@@ -195,11 +197,8 @@ namespace Deeproxio.AccountApi
                         });
                 });
 
-
-            app.UseAuthentication();
-            app.UseDefaultFiles();
-            app.UseStaticFiles();
-            app.UseMvc();
+            app.UseIdentityServer();
+            app.UseMvcWithDefaultRoute();
         }
     }
 }
