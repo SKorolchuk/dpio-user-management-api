@@ -39,16 +39,15 @@ namespace Deeproxio.AccountApi
         public void ConfigureServices(IServiceCollection services)
         {
             var connectionString = Configuration.GetConnectionString(nameof(IdentityDbContext));
-            var migrationsAssembly = typeof(Startup).Assembly.FullName;
+            var migrationsAssembly = typeof(IdentityDbContext).Assembly.FullName;
 
-            services.AddDbContext<IdentityDbContext>(options =>
+            services.AddDbContext<IdentityDbContext, IdentityDbContext>(options =>
                 options.UseNpgsql(Configuration.GetConnectionString(nameof(IdentityDbContext)),
-                    b => b.MigrationsAssembly(typeof(Startup).Assembly.FullName)));
+                    b => b.MigrationsAssembly(typeof(IdentityDbContext).Assembly.FullName)));
 
             services.TryAddTransient<IHttpContextAccessor, HttpContextAccessor>();
 
-            // add identity
-            var builder = services.AddIdentity<ApplicationUser, ApplicationRole>(o =>
+            services.AddIdentity<ApplicationUser, ApplicationRole>(o =>
             {
                 // configure identity options
                 o.Password.RequireDigit = false;
@@ -56,9 +55,7 @@ namespace Deeproxio.AccountApi
                 o.Password.RequireUppercase = false;
                 o.Password.RequireNonAlphanumeric = false;
                 o.Password.RequiredLength = 6;
-            });
-            builder = new IdentityBuilder(builder.UserType, typeof(IdentityRole), builder.Services);
-            builder.AddEntityFrameworkStores<IdentityDbContext>()
+            }).AddEntityFrameworkStores<IdentityDbContext>()
                 .AddDefaultTokenProviders();
 
             var identityServerBuilder = services.AddIdentityServer(options =>
@@ -71,15 +68,17 @@ namespace Deeproxio.AccountApi
                 // this adds the config data from DB (clients, resources)
                 .AddConfigurationStore(options =>
                 {
+                    options.DefaultSchema = "dbo";
                     options.ConfigureDbContext = b =>
-                        b.UseSqlServer(connectionString,
+                        b.UseNpgsql(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));
                 })
                 // this adds the operational data from DB (codes, tokens, consents)
                 .AddOperationalStore(options =>
                 {
+                    options.DefaultSchema = "dbo";
                     options.ConfigureDbContext = b =>
-                        b.UseSqlServer(connectionString,
+                        b.UseNpgsql(connectionString,
                             sql => sql.MigrationsAssembly(migrationsAssembly));
 
                     // this enables automatic token cleanup. this is optional.
