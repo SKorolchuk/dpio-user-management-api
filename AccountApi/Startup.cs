@@ -1,15 +1,11 @@
-﻿using System;
-using System.Net;
-using System.Text;
+﻿using System.Net;
 using AutoMapper;
 using Deeproxio.AccountApi.Extensions;
 using Deeproxio.Infrastructure.Notification;
 using Deeproxio.Infrastructure.Runtime;
 using Deeproxio.Persistence.Identity.Context;
 using Deeproxio.Persistence.Identity.Identity;
-using Deeproxio.Persistence.Identity.Jwt;
 using FluentValidation.AspNetCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -21,16 +17,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.IdentityModel.Tokens;
 using Prometheus;
 
 namespace Deeproxio.AccountApi
 {
     public class Startup : IServerStartup
     {
-        private readonly string secretKey;
-        private SymmetricSecurityKey signingKey;
-
         public Startup(IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
@@ -39,9 +31,6 @@ namespace Deeproxio.AccountApi
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
-
-            secretKey = Configuration.GetValue("JwtIssuerOptions::SecretKey", "iNivDmHLpUA223sqsfhqGbMRdRj1PVkH");
-            signingKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secretKey));
         }
 
         public IConfiguration Configuration { get; }
@@ -49,56 +38,14 @@ namespace Deeproxio.AccountApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var connectionString = Configuration.GetConnectionString(nameof(IdentityDbContext));
+            var migrationsAssembly = typeof(Startup).Assembly.FullName;
+
             services.AddDbContext<IdentityDbContext>(options =>
                 options.UseNpgsql(Configuration.GetConnectionString(nameof(IdentityDbContext)),
-                    b => b.MigrationsAssembly(typeof(IdentityDbContext).Assembly.FullName)));
-
-            services.AddSingleton<IJwtFactory, JwtFactory>();
+                    b => b.MigrationsAssembly(typeof(Startup).Assembly.FullName)));
 
             services.TryAddTransient<IHttpContextAccessor, HttpContextAccessor>();
-
-            // jwt wire up
-            // Get options from app settings
-            var jwtAppSettingOptions = Configuration.GetSection(nameof(JwtIssuerOptions));
-
-            // Configure JwtIssuerOptions
-            services.Configure<JwtIssuerOptions>(options =>
-            {
-                options.Issuer = jwtAppSettingOptions[nameof(JwtIssuerOptions.Issuer)];
-                options.Audience = jwtAppSettingOptions[nameof(JwtIssuerOptions.Audience)];
-                options.SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
-            });
-
-            var tokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = false,
-                ValidIssuer = jwtAppSettingOptions[nameof(JwtIssuerOptions.Issuer)],
-
-                ValidateAudience = false,
-                ValidAudience = jwtAppSettingOptions[nameof(JwtIssuerOptions.Audience)],
-
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = signingKey,
-
-                RequireExpirationTime = false,
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero
-            };
-
-            services
-                .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(configureOptions =>
-                {
-                    configureOptions.ClaimsIssuer = jwtAppSettingOptions[nameof(JwtIssuerOptions.Issuer)];
-                    configureOptions.TokenValidationParameters = tokenValidationParameters;
-                    configureOptions.SaveToken = true;
-                });
-
-            // api user claim policy
-            services.AddAuthorization(options =>
-            {
-                options.AddPolicy(nameof(ApplicationUser), policy => policy.RequireClaim(Constants.Strings.JwtClaimIdentifiers.Rol, Constants.Strings.JwtClaims.ApiAccess));
-            });
 
             // add identity
             var builder = services.AddIdentity<ApplicationUser, ApplicationRole>(o =>
@@ -111,7 +58,8 @@ namespace Deeproxio.AccountApi
                 o.Password.RequiredLength = 6;
             });
             builder = new IdentityBuilder(builder.UserType, typeof(IdentityRole), builder.Services);
-            builder.AddEntityFrameworkStores<IdentityDbContext>().AddDefaultTokenProviders();
+            builder.AddEntityFrameworkStores<IdentityDbContext>()
+                .AddDefaultTokenProviders();
 
             var identityServerBuilder = services.AddIdentityServer(options =>
                 {
@@ -120,9 +68,23 @@ namespace Deeproxio.AccountApi
                     options.Events.RaiseFailureEvents = true;
                     options.Events.RaiseSuccessEvents = true;
                 })
-                .AddInMemoryIdentityResources(IdentityServerConfig.GetIdentityResources())
-                .AddInMemoryApiResources(IdentityServerConfig.GetApis())
-                .AddInMemoryClients(IdentityServerConfig.GetClients())
+                // this adds the config data from DB (clients, resources)
+                .AddConfigurationStore(options =>
+                {
+                    options.ConfigureDbContext = b =>
+                        b.UseSqlServer(connectionString,
+                            sql => sql.MigrationsAssembly(migrationsAssembly));
+                })
+                // this adds the operational data from DB (codes, tokens, consents)
+                .AddOperationalStore(options =>
+                {
+                    options.ConfigureDbContext = b =>
+                        b.UseSqlServer(connectionString,
+                            sql => sql.MigrationsAssembly(migrationsAssembly));
+
+                    // this enables automatic token cleanup. this is optional.
+                    options.EnableTokenCleanup = true;
+                })
                 .AddAspNetIdentity<ApplicationUser>();
 
             services.AddAutoMapper();
@@ -131,17 +93,27 @@ namespace Deeproxio.AccountApi
                 .SetCompatibilityVersion(Microsoft.AspNetCore.Mvc.CompatibilityVersion.Version_2_1)
                 .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<Startup>());
 
+            services.AddAuthorization();
+
             services.AddTransient<Infrastructure.Notification.IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
 
             services.AddHealthChecks()
                 .AddDbContextCheck<IdentityDbContext>();
+
+            services.AddAuthentication("Bearer")
+                .AddJwtBearer("Bearer", options =>
+                {
+                    options.Authority = $"{Configuration.GetValue<string>("IdentityServerAddress")}";
+                    options.RequireHttpsMetadata = false;
+                    options.Audience = "auth";
+                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            app.UseHealthChecks("/ready", new HealthCheckOptions()
+            app.UseHealthChecks("/ready", new HealthCheckOptions
             {
                 // The following StatusCodes are the default assignments for
                 // the HealthCheckStatus properties.
