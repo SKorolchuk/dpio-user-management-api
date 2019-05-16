@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26124.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28803.156
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Deeproxio.AccountApi", "AccountApi\Deeproxio.AccountApi.csproj", "{317FBBBC-BB9C-4E67-88DA-52379058C755}"
 EndProject
@@ -16,6 +16,12 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Deeproxio.Persistence.Identity", "Engine\Deeproxio.Persistence.Identity\Deeproxio.Persistence.Identity.csproj", "{43411A10-3C41-418F-B7A5-2CE1BE0C829A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Deeproxio.Domain", "Engine\Domain\Deeproxio.Domain.csproj", "{D25E22A2-84CB-49E1-A2DE-3398ECE75496}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6B60BCFA-C292-4E1D-A0B0-33E1F95EECBB}"
+	ProjectSection(SolutionItems) = preProject
+		Dockerfile = Dockerfile
+		Dockerfile-MigrationJob = Dockerfile-MigrationJob
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -97,6 +103,7 @@ Global
 		{91B4148A-4E14-4FDF-B2E7-4AA4321EFF01} = {E62168AF-4A31-4FF9-88FD-A63264F6E775}
 		{43411A10-3C41-418F-B7A5-2CE1BE0C829A} = {E62168AF-4A31-4FF9-88FD-A63264F6E775}
 		{D25E22A2-84CB-49E1-A2DE-3398ECE75496} = {E62168AF-4A31-4FF9-88FD-A63264F6E775}
+		{6B60BCFA-C292-4E1D-A0B0-33E1F95EECBB} = {56698304-D3CA-4447-A733-B232A849D3B7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {67A9FBA0-ADC2-488F-AD34-02CA3DE4D9BE}

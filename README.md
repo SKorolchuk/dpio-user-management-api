@@ -20,10 +20,10 @@ Technologies: `ASP.NET Core`, `Entity Framework Core`, `ASP.NET Core Identity`, 
 
   ```bash
   # run command after image build
-  docker run -d --name dpio-accountapi --restart always -p 4300:80 --link test-postgres-server -e ConnectionStrings__DomainContext=Host=test-postgres-server;Database=dpio-main-db;Username=admin;Password=12345678 -e ConnectionStrings__DefaultConnection=Host=test-postgres-server;Database=dpio-main-db;Username=admin;Password=12345678 -e ConnectionStrings__IdentityDbContext=Host=test-postgres-server;Database=dpio-user-db;Username=admin;Password=12345678 -e ENVIRONMENT=Production dpio-accountapi:latest
+  docker run -d --name dpio-accountapi --restart always -p 4300:80 --link local-postgres -e ConnectionStrings__IdentityDbContext=Host=local-postgres;Database=dpioaccountdb;Username=postgres;Password=12345678 -e ENVIRONMENT=Production dpio-accountapi:latest
   ```
 
-  P.S. `test-postgres-server` is `Postgres` DB container deployed in the same docker environment. Replace to any correct name if it's need. Also replace `Username` and `Password` to correct DB user settings.
+  P.S. `local-postgres` is `Postgres` DB container deployed in the same docker environment. Replace to any correct name if it's need. Also replace `Username` and `Password` to correct DB user settings.
 
 - Migration image preparation
 
