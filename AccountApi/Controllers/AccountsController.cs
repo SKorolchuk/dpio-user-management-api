@@ -88,7 +88,10 @@ namespace Deeproxio.AccountApi.Controllers
 
             await _dbContext.SaveChangesAsync();
 
-            return new OkObjectResult("Account created");
+            return new OkObjectResult(new
+            {
+                Status = "Account created"
+            });
         }
 
 		//
