@@ -3,14 +3,13 @@ WORKDIR /migration
 
 # Copy csproj and restore as distinct layers
 COPY . ./
-COPY Engine/ ./Engine/
-COPY Engine/Deeproxio.Persistence.Identity/ ./Engine/Deeproxio.Persistence.Identity/
+COPY Deeproxio.Persistence.Identity/ ./Deeproxio.Persistence.Identity/
 
-WORKDIR /migration/Engine
+WORKDIR /migration/
 
 RUN dotnet restore
 
-WORKDIR /migration/Engine/Deeproxio.Persistence.Identity
+WORKDIR /migration/Deeproxio.Persistence.Identity
 
 RUN dotnet restore
 RUN dotnet build

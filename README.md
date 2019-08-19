@@ -1,6 +1,6 @@
 # Deeproxio Account REST API
 
-AccountApi service is used for Deeproxio platform authentication and authorization processes.
+UserManagement.API service is used for Deeproxio platform authentication and authorization processes.
 Also the service responds for managing dpio user data.
 
 Technologies: `ASP.NET Core`, `Entity Framework Core`, `ASP.NET Core Identity`, `AutoMapper`, `Npgsql`, `JWT`
@@ -13,14 +13,14 @@ Technologies: `ASP.NET Core`, `Entity Framework Core`, `ASP.NET Core Identity`, 
 
   ```bash
   # cd in root git repository
-  docker build -t dpio-accountapi:latest -f Dockerfile .
+  docker build -t dpio-UserManagement.API:latest -f Dockerfile .
   ```
 
 - Service image standalone usage
 
   ```bash
   # run command after image build
-  docker run -d --name dpio-accountapi --restart always -p 4300:80 --link local-postgres -e ConnectionStrings__IdentityDbContext=Host=local-postgres;Database=dpioaccountdb;Username=postgres;Password=12345678 -e ENVIRONMENT=Production dpio-accountapi:latest
+  docker run -d --name dpio-UserManagement.API --restart always -p 4300:80 --link local-postgres -e ConnectionStrings__IdentityDbContext=Host=local-postgres;Database=dpioaccountdb;Username=postgres;Password=12345678 -e ENVIRONMENT=Production dpio-UserManagement.API:latest
   ```
 
   P.S. `local-postgres` is `Postgres` DB container deployed in the same docker environment. Replace to any correct name if it's need. Also replace `Username` and `Password` to correct DB user settings.
@@ -29,12 +29,12 @@ Technologies: `ASP.NET Core`, `Entity Framework Core`, `ASP.NET Core Identity`, 
 
   ```bash
   # cd in root git repository
-  docker build -t dpio-accountapi-db-migration:latest -f Dockerfile-MigrationJob .
+  docker build -t dpio-UserManagement.API-db-migration:latest -f Dockerfile-MigrationJob .
   ```
 
 - Migration image standalone usage
   ```bash
   # run interactive container session after image build
-  docker run -it --rm --name dpio-accountapi-migration --link test-postgres-server -e ConnectionStrings__IdentityDbContext=Host=test-postgres-server;Database=dpio-user-db;Username=admin;Password=12345678 -e ENVIRONMENT=Production dpio-accountapi-db-migration:latest dotnet ef database update
+  docker run -it --rm --name dpio-UserManagement.API-migration --link test-postgres-server -e ConnectionStrings__IdentityDbContext=Host=test-postgres-server;Database=dpio-user-db;Username=admin;Password=12345678 -e ENVIRONMENT=Production dpio-UserManagement.API-db-migration:latest dotnet ef database update
   ```
   P.S. `test-postgres-server` is `Postgres` DB container deployed in the same docker environment. Replace to any correct name if it's need. Also replace `Username` and `Password` to correct DB user settings.

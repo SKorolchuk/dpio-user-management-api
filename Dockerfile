@@ -5,15 +5,15 @@ WORKDIR /app
 COPY . .
 RUN dotnet restore
 
-WORKDIR /app/AccountApi
+WORKDIR /app/Deeproxio.UserManagement.API
 
 RUN dotnet publish -c Release -o out
 
 # Build runtime image
 FROM microsoft/dotnet:2.2-aspnetcore-runtime
 WORKDIR /app
-COPY --from=build-env /app/AccountApi/out .
+COPY --from=build-env /app/Deeproxio.UserManagement.API/out .
 
 EXPOSE 80
 
-ENTRYPOINT ["dotnet", "Deeproxio.AccountApi.dll"]
+ENTRYPOINT ["dotnet", "Deeproxio.UserManagement.API.dll"]

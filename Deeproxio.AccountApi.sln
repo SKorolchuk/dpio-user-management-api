@@ -3,19 +3,19 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28803.156
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Deeproxio.AccountApi", "AccountApi\Deeproxio.AccountApi.csproj", "{317FBBBC-BB9C-4E67-88DA-52379058C755}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Deeproxio.UserManagement.API", "Deeproxio.UserManagement.API\Deeproxio.UserManagement.API.csproj", "{317FBBBC-BB9C-4E67-88DA-52379058C755}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Deeproxio.Infrastructure", "Engine\Infrastructure\Deeproxio.Infrastructure.csproj", "{AEB85BEE-B71A-4F07-8052-DDE0ADE0F85A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Deeproxio.Infrastructure", "Deeproxio.Infrastructure\Deeproxio.Infrastructure.csproj", "{AEB85BEE-B71A-4F07-8052-DDE0ADE0F85A}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Account", "Account", "{56698304-D3CA-4447-A733-B232A849D3B7}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UserManagement", "UserManagement", "{56698304-D3CA-4447-A733-B232A849D3B7}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Engine", "Engine", "{E62168AF-4A31-4FF9-88FD-A63264F6E775}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{E62168AF-4A31-4FF9-88FD-A63264F6E775}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Deeproxio.Persistence.Configuration", "Engine\Deeproxio.Persistence.Configuration\Deeproxio.Persistence.Configuration.csproj", "{91B4148A-4E14-4FDF-B2E7-4AA4321EFF01}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Deeproxio.Persistence.Configuration", "Deeproxio.Persistence.Configuration\Deeproxio.Persistence.Configuration.csproj", "{91B4148A-4E14-4FDF-B2E7-4AA4321EFF01}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Deeproxio.Persistence.Identity", "Engine\Deeproxio.Persistence.Identity\Deeproxio.Persistence.Identity.csproj", "{43411A10-3C41-418F-B7A5-2CE1BE0C829A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Deeproxio.Persistence.Identity", "Deeproxio.Persistence.Identity\Deeproxio.Persistence.Identity.csproj", "{43411A10-3C41-418F-B7A5-2CE1BE0C829A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Deeproxio.Domain", "Engine\Domain\Deeproxio.Domain.csproj", "{D25E22A2-84CB-49E1-A2DE-3398ECE75496}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Deeproxio.Domain", "Deeproxio.Domain\Deeproxio.Domain.csproj", "{D25E22A2-84CB-49E1-A2DE-3398ECE75496}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6B60BCFA-C292-4E1D-A0B0-33E1F95EECBB}"
 	ProjectSection(SolutionItems) = preProject
