@@ -1,4 +1,4 @@
-# Deeproxio Account REST API
+# Deeproxio User Management REST API
 
 UserManagement.API service is used for Deeproxio platform authentication and authorization processes.
 Also the service responds for managing dpio user data.
