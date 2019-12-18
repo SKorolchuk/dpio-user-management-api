@@ -4,14 +4,12 @@ using System.Text;
 using AutoMapper;
 using Deeproxio.UserManagement.API.Extensions;
 using Deeproxio.Infrastructure.Notification;
-using Deeproxio.Infrastructure.Runtime;
 using Deeproxio.Persistence.Identity.Context;
 using Deeproxio.Persistence.Identity.Identity;
 using Deeproxio.Persistence.Identity.Jwt;
 using FluentValidation.AspNetCore;
 using Kubernetes.Configuration.Extensions.Configmap;
 using Kubernetes.Configuration.Extensions.Secret;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -25,10 +23,11 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Prometheus;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace Deeproxio.UserManagement.API
 {
-    public class Startup : IServerStartup
+    public class Startup
     {
         private string secretKey;
         private SymmetricSecurityKey signingKey;
@@ -128,7 +127,7 @@ namespace Deeproxio.UserManagement.API
                 .AddAutoMapper(typeof(Startup).Assembly)
                 .AddCors()
                 .AddMvc()
-                .SetCompatibilityVersion(Microsoft.AspNetCore.Mvc.CompatibilityVersion.Version_2_2)
+                .SetCompatibilityVersion(Microsoft.AspNetCore.Mvc.CompatibilityVersion.Version_3_0)
                 .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<Startup>());
 
             services.AddTransient<IEmailSender, AuthMessageSender>();
@@ -141,19 +140,7 @@ namespace Deeproxio.UserManagement.API
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            app.UseHealthChecks("/ready", new HealthCheckOptions()
-            {
-                // The following StatusCodes are the default assignments for
-                // the HealthCheckStatus properties.
-                ResultStatusCodes =
-                {
-                    [HealthStatus.Healthy] = StatusCodes.Status200OK,
-                    [HealthStatus.Degraded] = StatusCodes.Status200OK,
-                    [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
-                },
-                // The default value is false.
-                AllowCachingResponses = false
-            });
+            app.UseRouting();
 
             app.UseMetricServer();
 
@@ -167,8 +154,7 @@ namespace Deeproxio.UserManagement.API
             app.UseCors(builder => builder
                 .AllowAnyOrigin()
                 .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials());
+                .AllowAnyHeader());
 
             app.UseExceptionHandler(
                 builder =>
@@ -190,7 +176,26 @@ namespace Deeproxio.UserManagement.API
 
 
             app.UseAuthentication();
-            app.UseMvc();
+            app.UseAuthorization();
+
+
+
+            app.UseEndpoints(endpoints => {
+                endpoints.MapControllers();
+                endpoints.MapHealthChecks("/ready", new HealthCheckOptions()
+                {
+                    // The following StatusCodes are the default assignments for
+                    // the HealthCheckStatus properties.
+                    ResultStatusCodes =
+                {
+                    [HealthStatus.Healthy] = StatusCodes.Status200OK,
+                    [HealthStatus.Degraded] = StatusCodes.Status200OK,
+                    [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
+                },
+                    // The default value is false.
+                    AllowCachingResponses = false
+                }).WithDisplayName("healthz");
+            });
         }
     }
 }
