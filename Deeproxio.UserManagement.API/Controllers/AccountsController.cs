@@ -4,29 +4,29 @@ using AutoMapper;
 using Deeproxio.UserManagement.API.Models;
 using Deeproxio.UserManagement.API.Models.Validations;
 using Deeproxio.Persistence.Identity.Context;
-using Deeproxio.Persistence.Identity.Identity;
 using Deeproxio.Persistence.Identity.Jwt;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Deeproxio.Persistence.Identity.Models;
 
 namespace Deeproxio.UserManagement.API.Controllers
 {
     [Route("api/[controller]")]
     public class AccountsController : Controller
     {
-        private readonly IdentityDbContext _dbContext;
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly PlatformIdentityDbContext _dbContext;
+        private readonly UserManager<PlatformIdentityUser> _userManager;
         private readonly IMapper _mapper;
         private readonly IJwtFactory _jwtFactory;
         private readonly JwtIssuerOptions _jwtOptions;
 
         public AccountsController(
-            UserManager<ApplicationUser> userManager,
+            UserManager<PlatformIdentityUser> userManager,
             IMapper mapper,
-            IdentityDbContext dbContext,
+            PlatformIdentityDbContext dbContext,
             IJwtFactory jwtFactory,
             IOptions<JwtIssuerOptions> jwtOptions)
         {
@@ -81,7 +81,7 @@ namespace Deeproxio.UserManagement.API.Controllers
                 return BadRequest(ModelState);
             }
 
-            var userIdentity = _mapper.Map<ApplicationUser>(model);
+            var userIdentity = _mapper.Map<PlatformIdentityUser>(model);
 
             var result = await _userManager.CreateAsync(userIdentity, model.Password);
 

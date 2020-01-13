@@ -5,7 +5,6 @@ using AutoMapper;
 using Deeproxio.UserManagement.API.Extensions;
 using Deeproxio.Infrastructure.Notification;
 using Deeproxio.Persistence.Identity.Context;
-using Deeproxio.Persistence.Identity.Identity;
 using Deeproxio.Persistence.Identity.Jwt;
 using FluentValidation.AspNetCore;
 using Kubernetes.Configuration.Extensions.Configmap;
@@ -24,6 +23,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Prometheus;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Deeproxio.Persistence.Identity.Models;
 
 namespace Deeproxio.UserManagement.API
 {
@@ -59,9 +59,10 @@ namespace Deeproxio.UserManagement.API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<IdentityDbContext>(options =>
-                options.UseNpgsql(Configuration.GetConnectionString(nameof(IdentityDbContext)),
-                    b => b.MigrationsAssembly(typeof(IdentityDbContext).Assembly.FullName)));
+            services.AddControllersWithViews();
+
+            services.AddDbContext<PlatformIdentityDbContext>(options =>
+                options.UseNpgsql(Configuration.GetConnectionString(nameof(PlatformIdentityDbContext))));
 
             services.AddSingleton<IJwtFactory, JwtFactory>();
 
@@ -95,6 +96,68 @@ namespace Deeproxio.UserManagement.API
                 ClockSkew = TimeSpan.Zero
             };
 
+            // add identity
+            var builder = services.AddIdentityCore<PlatformIdentityUser>(o =>
+            {
+                // configure identity options
+                o.Password.RequireDigit = false;
+                o.Password.RequireLowercase = false;
+                o.Password.RequireUppercase = false;
+                o.Password.RequireNonAlphanumeric = false;
+                o.Password.RequiredLength = 6;
+            });
+            builder = new IdentityBuilder(builder.UserType, typeof(IdentityRole), builder.Services);
+            builder.AddEntityFrameworkStores<PlatformIdentityDbContext>().AddDefaultTokenProviders();
+
+            services.AddHttpContextAccessor();
+            // Identity services
+            services.TryAddScoped<IUserValidator<PlatformIdentityUser>, UserValidator<PlatformIdentityUser>>();
+            services.TryAddScoped<IPasswordValidator<PlatformIdentityUser>, PasswordValidator<PlatformIdentityUser>>();
+            services.TryAddScoped<IPasswordHasher<PlatformIdentityUser>, PasswordHasher<PlatformIdentityUser>>();
+            services.TryAddScoped<ILookupNormalizer, UpperInvariantLookupNormalizer>();
+            services.TryAddScoped<IRoleValidator<IdentityRole>, RoleValidator<IdentityRole>>();
+
+            services.TryAddScoped<IdentityErrorDescriber>();
+            services.TryAddScoped<ISecurityStampValidator, SecurityStampValidator<PlatformIdentityUser>>();
+            services.TryAddScoped<ITwoFactorSecurityStampValidator, TwoFactorSecurityStampValidator<PlatformIdentityUser>>();
+            services.TryAddScoped<IUserClaimsPrincipalFactory<PlatformIdentityUser>, UserClaimsPrincipalFactory<PlatformIdentityUser, IdentityRole>>();
+            services.TryAddScoped<UserManager<PlatformIdentityUser>>();
+            services.TryAddScoped<SignInManager<PlatformIdentityUser>>();
+            services.TryAddScoped<RoleManager<IdentityRole>>();
+
+
+            services.AddIdentityServer(options =>
+            {
+                options.Authentication.CookieAuthenticationScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.Events.RaiseErrorEvents = true;
+                options.Events.RaiseInformationEvents = true;
+                options.Events.RaiseFailureEvents = true;
+                options.Events.RaiseSuccessEvents = true;
+            })
+            .AddOperationalStore<PersistedGrantStoreDbContext>(options =>
+            {
+                options.ConfigureDbContext = builder => builder.UseNpgsql(Configuration.GetConnectionString(nameof(PersistedGrantStoreDbContext)));
+                options.EnableTokenCleanup = true;
+                options.DefaultSchema = "id4_persist_grant";
+            })
+            .AddConfigurationStore<ConfigurationStoreDbContext>(options =>
+            {
+                options.ConfigureDbContext = builder => builder.UseNpgsql(Configuration.GetConnectionString(nameof(ConfigurationStoreDbContext)));
+                options.DefaultSchema = "id4_config";
+            })
+            .AddAspNetIdentity<PlatformIdentityUser>()
+            .AddDeveloperSigningCredential();
+
+            services
+                .AddAutoMapper(typeof(Startup).Assembly)
+                .AddCors()
+                .AddMvc()
+                .SetCompatibilityVersion(Microsoft.AspNetCore.Mvc.CompatibilityVersion.Version_3_0)
+                .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<Startup>());
+
+            services.AddTransient<IEmailSender, AuthMessageSender>();
+            services.AddTransient<ISmsSender, AuthMessageSender>();
+
             services
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(configureOptions =>
@@ -107,34 +170,13 @@ namespace Deeproxio.UserManagement.API
             // api user claim policy
             services.AddAuthorization(options =>
             {
-                options.AddPolicy(nameof(ApplicationUser), policy => policy.RequireClaim(Constants.Strings.JwtClaimIdentifiers.Rol, Constants.Strings.JwtClaims.ApiAccess));
+                options.AddPolicy(nameof(PlatformIdentityUser), policy => policy.RequireClaim(Constants.Strings.JwtClaimIdentifiers.Rol, Constants.Strings.JwtClaims.ApiAccess));
             });
-
-            // add identity
-            var builder = services.AddIdentityCore<ApplicationUser>(o =>
-            {
-                // configure identity options
-                o.Password.RequireDigit = false;
-                o.Password.RequireLowercase = false;
-                o.Password.RequireUppercase = false;
-                o.Password.RequireNonAlphanumeric = false;
-                o.Password.RequiredLength = 6;
-            });
-            builder = new IdentityBuilder(builder.UserType, typeof(IdentityRole), builder.Services);
-            builder.AddEntityFrameworkStores<IdentityDbContext>().AddDefaultTokenProviders();
-
-            services
-                .AddAutoMapper(typeof(Startup).Assembly)
-                .AddCors()
-                .AddMvc()
-                .SetCompatibilityVersion(Microsoft.AspNetCore.Mvc.CompatibilityVersion.Version_3_0)
-                .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<Startup>());
-
-            services.AddTransient<IEmailSender, AuthMessageSender>();
-            services.AddTransient<ISmsSender, AuthMessageSender>();
 
             services.AddHealthChecks()
-                .AddDbContextCheck<IdentityDbContext>(nameof(IdentityDbContext), HealthStatus.Degraded);
+                .AddDbContextCheck<PlatformIdentityDbContext>(nameof(PlatformIdentityDbContext), HealthStatus.Unhealthy)
+                .AddDbContextCheck<PersistedGrantStoreDbContext>(nameof(PersistedGrantStoreDbContext), HealthStatus.Unhealthy)
+                .AddDbContextCheck<ConfigurationStoreDbContext>(nameof(ConfigurationStoreDbContext), HealthStatus.Unhealthy);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -174,13 +216,13 @@ namespace Deeproxio.UserManagement.API
                         });
                 });
 
-
+            app.UseIdentityServer();
             app.UseAuthentication();
             app.UseAuthorization();
 
-
-
-            app.UseEndpoints(endpoints => {
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapDefaultControllerRoute();
                 endpoints.MapControllers();
                 endpoints.MapHealthChecks("/ready", new HealthCheckOptions()
                 {
