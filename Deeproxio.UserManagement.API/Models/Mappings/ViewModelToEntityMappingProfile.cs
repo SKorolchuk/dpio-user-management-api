@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using Deeproxio.Persistence.Identity.Identity;
+using Deeproxio.Persistence.Identity.Models;
 
 namespace Deeproxio.UserManagement.API.Models.Mappings
 {
@@ -7,7 +7,7 @@ namespace Deeproxio.UserManagement.API.Models.Mappings
     {
         public ViewModelToEntityMappingProfile()
         {
-            CreateMap<RegistrationViewModel, ApplicationUser>().ForMember(au => au.UserName, map => map.MapFrom(vm => vm.Email));
+            CreateMap<RegistrationViewModel, PlatformIdentityUser>().ForMember(au => au.UserName, map => map.MapFrom(vm => vm.Email));
         }
     }
 }

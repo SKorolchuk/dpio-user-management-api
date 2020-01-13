@@ -1,1 +1,0 @@
-dotnet ef dbcontext scaffold "Host=localhost;Database=AIConception;Username=admin;Password=12345678" Npgsql.EntityFrameworkCore.PostgreSQL
