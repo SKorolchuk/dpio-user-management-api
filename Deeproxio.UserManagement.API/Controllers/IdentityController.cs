@@ -1,21 +1,21 @@
 ﻿using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
-using Deeproxio.UserManagement.API.Models;
-using Deeproxio.UserManagement.API.Models.Validations;
 using Deeproxio.Persistence.Identity.Context;
 using Deeproxio.Persistence.Identity.Jwt;
+using Deeproxio.Persistence.Identity.Models;
+using Deeproxio.UserManagement.API.Models;
+using Deeproxio.UserManagement.API.Models.Validations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Deeproxio.Persistence.Identity.Models;
 
 namespace Deeproxio.UserManagement.API.Controllers
 {
     [Route("api/[controller]")]
-    public class AccountsController : Controller
+    public class IdentityController : Controller
     {
         private readonly PlatformIdentityDbContext _dbContext;
         private readonly UserManager<PlatformIdentityUser> _userManager;
@@ -23,7 +23,7 @@ namespace Deeproxio.UserManagement.API.Controllers
         private readonly IJwtFactory _jwtFactory;
         private readonly JwtIssuerOptions _jwtOptions;
 
-        public AccountsController(
+        public IdentityController(
             UserManager<PlatformIdentityUser> userManager,
             IMapper mapper,
             PlatformIdentityDbContext dbContext,
@@ -37,6 +37,8 @@ namespace Deeproxio.UserManagement.API.Controllers
             _jwtOptions = jwtOptions.Value;
         }
 
+        // GET: api/identity
+        // With Authorization HTTP Header
         [HttpGet]
         [Authorize]
         public IActionResult Get()
@@ -47,10 +49,10 @@ namespace Deeproxio.UserManagement.API.Controllers
             });
         }
 
-        // POST api/accounts/login
-        [HttpPost("login")]
+        // POST: api/identity/token
+        [HttpPost("token")]
         [AllowAnonymous]
-        public async Task<IActionResult> Login([FromBody]CredentialsViewModel credentials)
+        public async Task<IActionResult> Token([FromBody] CredentialsViewModel credentials)
         {
             if (!ModelState.IsValid)
             {
@@ -58,6 +60,7 @@ namespace Deeproxio.UserManagement.API.Controllers
             }
 
             var identity = await GetClaimsIdentity(credentials.UserName, credentials.Password);
+
             if (identity == null)
             {
                 return BadRequest(Errors.AddErrorToModelState("login_failure", "Invalid username or password.", ModelState));
@@ -68,13 +71,14 @@ namespace Deeproxio.UserManagement.API.Controllers
                 {
                     Formatting = Formatting.Indented
                 });
+
             return new OkObjectResult(jwt);
         }
 
-        // POST api/accounts/register
+        // POST: api/identity/register
         [HttpPost("register")]
         [AllowAnonymous]
-        public async Task<IActionResult> Register([FromBody]RegistrationViewModel model)
+        public async Task<IActionResult> Register([FromBody] RegistrationViewModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -85,7 +89,9 @@ namespace Deeproxio.UserManagement.API.Controllers
 
             var result = await _userManager.CreateAsync(userIdentity, model.Password);
 
-            if (!result.Succeeded) return new BadRequestObjectResult(Errors.AddErrorsToModelState(result, ModelState));
+            if (!result.Succeeded) { 
+                return new BadRequestObjectResult(Errors.AddErrorsToModelState(result, ModelState)); 
+            }
 
             await _dbContext.SaveChangesAsync();
 
@@ -95,11 +101,10 @@ namespace Deeproxio.UserManagement.API.Controllers
             });
         }
 
-        //
-        // POST: api/accounts/forgot
+        // POST: api/identity/forgot
         [HttpPost("forgot")]
         [AllowAnonymous]
-        public async Task<IActionResult> ForgotPassword([FromBody]ForgotPasswordViewModel model)
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordViewModel model)
         {
             if (ModelState.IsValid)
             {
@@ -110,17 +115,17 @@ namespace Deeproxio.UserManagement.API.Controllers
                     // Don't reveal that the user does not exist or is not confirmed
                     return NotFound(model);
                 }
+
                 return new OkObjectResult(user);
             }
 
             return BadRequest(model);
         }
 
-        //
         // POST: api/accounts/reset
         [HttpPost("reset")]
         [AllowAnonymous]
-        public async Task<IActionResult> ResetPassword([FromBody]ResetPasswordViewModel model)
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordViewModel model)
         {
             if (!ModelState.IsValid)
             {

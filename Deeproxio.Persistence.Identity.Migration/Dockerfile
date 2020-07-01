@@ -1,4 +1,4 @@
-FROM microsoft/dotnet:2.2-sdk
+FROM microsoft/dotnet:3.1-sdk
 WORKDIR /migration
 
 # Copy csproj and restore as distinct layers
