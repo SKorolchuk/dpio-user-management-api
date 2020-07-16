@@ -1,0 +1,63 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "dpio-user-management-api.fullname" . }}-migration-job"
+  labels:
+    {{ include "dpio-user-management-api.labels" . | nindent 4 }}
+spec:
+  template:
+    spec:
+      containers: 
+        - name: {{ include "dpio-user-management-api.fullname" . }}-migration-job
+          image: "{{ .Values.migration.image.name }}:{{ .Values.migration.image.tag }}"
+          imagePullPolicy: {{ .Values.migration.image.pullPolicy }}
+          command: ["dotnet", "run"]
+          env:
+            - name: ENVIRONMENT
+              value: {{ required "Environment is not set." .Values.environment }}
+            - name: PATH
+              value: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            - name: Config__SeedData
+              value: "True"
+            - name: Postgres__Host
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dpio-user-management-api.fullname" . }}-secrets
+                  key: PostgresHost
+            - name: Postgres__Port
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dpio-user-management-api.fullname" . }}-secrets
+                  key: PostgresPort
+            - name: Postgres__Database
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dpio-user-management-api.fullname" . }}-secrets
+                  key: PostgresDatabase
+            - name: Postgres__Username
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dpio-user-management-api.fullname" . }}-secrets
+                  key: PostgresUsername
+            - name: Postgres__Password
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dpio-user-management-api.fullname" . }}-secrets
+                  key: PostgresPassword
+            - name: ConnectionStrings__PlatformIdentityDbContext
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dpio-user-management-api.fullname" . }}-secrets
+                  key: PlatformIdentityDbContext
+            - name: ConnectionStrings__ConfigurationStoreDbContext
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dpio-user-management-api.fullname" . }}-secrets
+                  key: ConfigurationStoreDbContext
+            - name: ConnectionStrings__PersistedGrantStoreDbContext
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dpio-user-management-api.fullname" . }}-secrets
+                  key: PersistedGrantStoreDbContext
+      restartPolicy: OnFailure
+  ttlSecondsAfterFinished: 0

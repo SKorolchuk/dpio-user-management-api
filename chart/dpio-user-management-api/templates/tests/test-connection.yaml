@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "{{ include "dpio-application.fullname" . }}-test-connection"
+  name: "{{ include "dpio-user-management-api.fullname" . }}-test-connection"
   labels:
-{{ include "dpio-application.labels" . | nindent 4 }}
+{{ include "dpio-user-management-api.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test-success
 spec:
@@ -11,5 +11,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args:  ['{{ include "dpio-application.fullname" . }}:{{ .Values.service.port }}']
+      args:  ['{{ include "dpio-user-management-api.fullname" . }}:{{ .Values.service.port }}/ready', '--wait=120']
   restartPolicy: Never

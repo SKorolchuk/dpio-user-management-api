@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using Deeproxio.Persistence.Identity.Migrator.Managers;
+using Deeproxio.Persistence.Identity.Migration.Managers;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
@@ -50,15 +50,18 @@ namespace Deeproxio.Persistence.Identity
                 {
                     migrationManager.Migrate(args, args.Any(arg => arg.ToLowerInvariant().Equals("seed")) || configuration.GetValue<bool>("Config:SeedData"));
                 }
-
             }
             catch (Exception ex)
             {
                 Log.Fatal(ex, "Host terminated unexpectedly.");
+
+                Environment.Exit(100);
             }
             finally
             {
                 Log.CloseAndFlush();
+
+                Environment.Exit(0);
             }
         }
     }

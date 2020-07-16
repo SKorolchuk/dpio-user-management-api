@@ -1,4 +1,4 @@
-FROM microsoft/dotnet:3.1-sdk
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1-alpine
 WORKDIR /migration
 
 # Copy csproj and restore as distinct layers
@@ -9,7 +9,7 @@ WORKDIR /migration/
 
 RUN dotnet restore
 
-WORKDIR /migration/Deeproxio.Persistence.Identity
+WORKDIR /migration/Deeproxio.Persistence.Identity.Migration
 
 RUN dotnet restore
 RUN dotnet build
