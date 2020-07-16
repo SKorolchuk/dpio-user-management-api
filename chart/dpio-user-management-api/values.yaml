@@ -1,0 +1,111 @@
+# Default values for dpio-user-management-api.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+name: dpio-accountapi
+
+## Provide a name in place of `dpio-user-management-api` for `app:` labels
+##
+nameOverride:
+
+## Provide a name to substitute for the full names of resources
+##
+fullnameOverride:
+
+image:
+    name: dpio-user-management-api
+    tag: latest
+    pullPolicy: Never
+    pullSecrets: []
+    minReplicaCount: 2
+    maxReplicaCount: 10
+
+migration:
+    image:
+        name: dpio-user-management-api-db-migration
+        tag: latest
+        pullPolicy: Never
+        pullSecrets: []
+
+replicaCount: 1
+environment: "Production"
+
+rbac:
+    enabled: true
+
+podSecurityContext: {}
+    # fsGroup: 2000
+
+securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+secretKey: "iNivDmHLpUA223sqsfhqGbMRdRj1PVkH"
+jwt:
+    audience: "WEB"
+    issuer: "http://deeprox.io"
+
+service:
+    type: ClusterIP
+    port: 80
+
+ingress:
+    enabled: true
+    annotations:
+        kubernetes.io/ingress.class: nginx
+        kubernetes.io/tls-acme: "true"
+        nginx.org/mergeable-ingress-type: "minion"
+        nginx.ingress.kubernetes.io/rewrite-target: /$2
+        nginx.ingress.kubernetes.io/app-root: /authorize
+    hosts:
+    - host: deeprox.io
+      paths:
+      - path: /authorize(/|$)(.*)
+    # tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+
+prometheus:
+    enabled: false
+    # pushgateway:
+    #     url: "prometheus-pushgateway.monitoring:9091"
+
+resources:
+    limits:
+        cpu: 100m
+        memory: 128Mi
+    requests:
+        cpu: 100m
+        memory: 128Mi
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+metrics:
+- type: Resource
+  resource:
+    name: cpu
+    target:
+        type: Utilization
+        averageUtilization: 30
+
+postgresql:
+    enabled: true
+    fullnameOverride: "dpio-user-postgres-db"
+    servicePort: 5432
+    postgresqlUsername: "dpioaccountdbadmin"
+    accountDbName: DpioAccountDB
+    postgresqlDatabase: postgres
+    postgresqlPassword: "12345678"

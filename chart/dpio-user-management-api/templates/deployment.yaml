@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dpio-user-management-api.fullname" . }}
+  labels:
+    {{- include "dpio-user-management-api.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "dpio-user-management-api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "dpio-user-management-api.selectorLabels" . | nindent 8 }}
+    spec:
+    {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      {{- if .Values.rbac.enabled }}
+      serviceAccountName: "{{ include "dpio-user-management-api.fullname" . }}"
+      {{- else }}
+      serviceAccountName: "default"
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.name }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          env:
+            - name: PATH
+              value: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            - name: ENVIRONMENT
+              value: {{ required "Environment is not set." .Values.environment }}
+            - name: ASPNETCORE_URLS
+              value: "http://+:80"
+            - name: JwtIssuerOptions__Issuer
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "dpio-user-management-api.fullname" . }}
+                  key: jwt.issuer
+            - name: JwtIssuerOptions__Audience
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "dpio-user-management-api.fullname" . }}
+                  key: jwt.audience
+            {{- if .Values.prometheus.enabled }}
+            - name: PrometheusPushGateway
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "dpio-user-management-api.fullname" . }}
+                  key: metrics.prometheus.pushgateway.url
+            {{- end }}
+            - name: JwtIssuerOptions__SecretKey
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dpio-user-management-api.fullname" . }}-secrets
+                  key: SecretKey
+            - name: ConnectionStrings__PlatformIdentityDbContext
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dpio-user-management-api.fullname" . }}-secrets
+                  key: PlatformIdentityDbContext
+            - name: ConnectionStrings__ConfigurationStoreDbContext
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dpio-user-management-api.fullname" . }}-secrets
+                  key: ConfigurationStoreDbContext
+            - name: ConnectionStrings__PersistedGrantStoreDbContext
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "dpio-user-management-api.fullname" . }}-secrets
+                  key: PersistedGrantStoreDbContext
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            timeoutSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

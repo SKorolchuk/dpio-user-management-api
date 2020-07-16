@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-
-namespace Deeproxio.Persistence.Identity.Migrator.Managers
+﻿namespace Deeproxio.Persistence.Identity.Migration.Managers
 {
     public interface IMigrationManager
     {

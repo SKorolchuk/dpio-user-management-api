@@ -4,7 +4,7 @@ using IdentityServer4.EntityFramework.Mappers;
 using IdentityServer4.Models;
 using Serilog;
 
-namespace Deeproxio.Persistence.Identity.Migrator.Seeds
+namespace Deeproxio.Persistence.Identity.Migration.Seeds
 {
     public static class ConfigurationStoreDbContextSeed
     {

@@ -2,7 +2,7 @@
 using Deeproxio.Persistence.Identity.Context;
 using Serilog;
 
-namespace Deeproxio.Persistence.Identity.Migrator.Seeds
+namespace Deeproxio.Persistence.Identity.Migration.Seeds
 {
     public static class PersistedGrantStoreDbContextSeed
     {

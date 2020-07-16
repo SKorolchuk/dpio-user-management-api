@@ -3,15 +3,17 @@ using System;
 using Deeproxio.Persistence.Identity.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Deeproxio.Persistence.Identity.Migrations.PersistedGrantStoreDb
 {
     [DbContext(typeof(PersistedGrantStoreDbContext))]
-    partial class PersistedGrantStoreDbContextModelSnapshot : ModelSnapshot
+    [Migration("20200701120127_IdentityServer_Version_Update")]
+    partial class IdentityServer_Version_Update
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

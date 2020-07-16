@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
-namespace Deeproxio.Persistence.Identity.Migrator.Seeds
+namespace Deeproxio.Persistence.Identity.Migration.Seeds
 {
     public static class PlatformIdentityDbContextSeed
     {

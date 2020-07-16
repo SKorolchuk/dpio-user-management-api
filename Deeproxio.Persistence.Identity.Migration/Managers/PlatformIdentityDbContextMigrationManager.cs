@@ -1,7 +1,7 @@
-﻿using Deeproxio.Persistence.Identity.Migrator.Seeds;
+﻿using Deeproxio.Persistence.Identity.Migration.Seeds;
 using Microsoft.EntityFrameworkCore;
 
-namespace Deeproxio.Persistence.Identity.Migrator.Managers
+namespace Deeproxio.Persistence.Identity.Migration.Managers
 {
     public class PlatformIdentityDbContextMigrationManager : IMigrationManager
     {

@@ -1,0 +1,41 @@
+apiVersion: v2
+name: dpio-user-management-api
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+version: 0.1.1
+# This is the version number of the application being deployed. This version number should be
+# incremented each time you make changes to the application.
+appVersion: 1.0.0
+description: IdentityServer4-based JWT Authentication/Authorization and User Management API
+
+# A chart can be either an 'application' or a 'library' chart.
+#
+# Application charts are a collection of templates that can be packaged into versioned archives
+# to be deployed.
+#
+# Library charts provide useful utilities or functions for the chart developer. They're included as
+# a dependency of application charts to inject those utilities and functions into the rendering
+# pipeline. Library charts do not define any templates and therefore cannot be deployed.
+type: application
+icon: https://avatars3.githubusercontent.com/u/43457003
+keywords:
+- dpio
+- deeproxio
+- aspnetcore
+- identityserver4
+- openid
+home: https://github.com/SKorolchuk/dpio-user-management-api
+sources:
+- https://github.com/SKorolchuk/dpio-user-management-api
+maintainers:
+- name: SKorolchuk
+  email: sergey.korolchuk.dev@gmail.com
+engine: gotpl
+annotations:
+  category: Infra
+  scope: Users
+dependencies:
+  - name: postgresql
+    version: 9.1.1
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
