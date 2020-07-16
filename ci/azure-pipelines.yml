@@ -1,0 +1,134 @@
+name: Deeproxio.UserManagement.API-$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  - "master"
+  - "develop"
+
+pool: Development
+
+variables:
+  buildConfiguration: 'Release'
+  dockerRegistryServiceConnection: localDockerRegistry
+  dockerImageTag: 'ci-$(Date:yyyyMMdd)$(Rev:.r)'
+
+stages:
+  - stage: 'Build & Verify'
+    displayName: 'Build API & Docker Images'
+    jobs: 
+    - job: 'Build'
+      displayName: 'Build Deeproxio.UserManagement.API'
+      pool: Development
+      variables:
+        dotnetSdkVersion: '3.1.x'
+      steps:
+
+      - task: UseDotNet@2
+        displayName: 'Use .NET Core SDK $(dotnetSdkVersion)'
+        inputs:
+          version: '$(dotnetSdkVersion)'
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Restore project dependencies'
+        inputs:
+          command: 'restore'
+          projects: '**/*.csproj'
+  
+      - task: DotNetCoreCLI@2
+        displayName: 'Build the project - $(buildConfiguration)'
+        inputs:
+          command: 'build'
+          arguments: '--no-restore --configuration $(buildConfiguration)'
+          projects: '**/*.csproj'
+  
+      - task: Docker@2
+        displayName: Login to Docker Registry
+        inputs:
+          command: login
+          containerRegistry: $(dockerRegistryServiceConnection)
+
+      - task: Docker@2
+        displayName: Build and Push
+        inputs:
+          command: buildAndPush
+          containerRegistry: $(dockerRegistryServiceConnection)
+          repository: dpio-user-management-api
+          tags: |
+            latest
+            $(dockerImageTag)
+          Dockerfile: Deeproxio.UserManagement.API/Dockerfile
+          buildContext: ./
+
+      - task: Docker@2
+        displayName: Build and Push
+        inputs:
+          command: buildAndPush
+          containerRegistry: $(dockerRegistryServiceConnection)
+          repository: dpio-user-management-api-db-migration
+          tags: |
+            latest
+            $(dockerImageTag)
+          Dockerfile: Deeproxio.Persistence.Identity.Migration/Dockerfile
+          buildContext: ./
+
+      - task: HelmDeploy@0
+        displayName: Helm package
+        inputs:
+          command: package
+          chartPath: chart/dpio-user-management-api
+          updatedependency: true
+          destination: $(Build.ArtifactStagingDirectory)
+
+      - publish: '$(Build.ArtifactStagingDirectory)'
+        artifact: drop
+  
+  # - stage: 'Local'
+  #   displayName: 'Deploy to the local environment'
+  #   dependsOn: Build
+  #   condition: |
+  #     and
+  #     (
+  #       succeeded(),
+  #       eq(variables['Build.SourceBranchName'], variables['releaseBranchName'])
+  #     )
+  #   jobs:
+  #   - deployment: Deploy
+  #     pool:
+  #       vmImage: 'ubuntu-18.04'
+  #     environment: dev
+  #     variables:
+  #     - group: Release
+  #     strategy:
+  #       runOnce:
+  #         deploy:
+  #           steps:
+  #           - download: current
+  #             artifact: drop
+  #           - task: AzureWebApp@1
+  #             displayName: 'Azure App Service Deploy: website'
+  #             inputs:
+  #               azureSubscription: 'Resource Manager - Tailspin - Space Game'
+  #               appName: '$(WebAppNameDev)'
+  #               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
+
+  # - stage: 'Staging'
+  #   displayName: 'Deploy to the staging environment'
+  #   dependsOn: Local
+  #   jobs:
+  #   - deployment: Deploy
+  #     pool:
+  #       vmImage: 'ubuntu-18.04'
+  #     environment: staging
+  #     variables:
+  #     - group: 'Release'
+  #     strategy:
+  #       runOnce:
+  #         deploy:
+  #           steps:
+  #           - download: current
+  #             artifact: drop
+  #           - task: AzureWebApp@1
+  #             displayName: 'Azure App Service Deploy: website'
+  #             inputs:
+  #               azureSubscription: 'Resource Manager - Tailspin - Space Game'
+  #               appName: '$(WebAppNameStaging)'
+  #               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
