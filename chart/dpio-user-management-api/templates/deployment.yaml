@@ -1,3 +1,5 @@
+{{- $fullName := include "dpio-user-management-api.fullname" . -}}
+{{- $saName := printf "%s-%s" .Release.Namespace $fullName | trunc 63 | trimSuffix "-" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,7 +21,7 @@ spec:
         {{- toYaml . | nindent 8 }}
     {{- end }}
       {{- if .Values.rbac.enabled }}
-      serviceAccountName: "{{ include "dpio-user-management-api.fullname" . }}"
+      serviceAccountName: "{{ $saName }}"
       {{- else }}
       serviceAccountName: "default"
       {{- end }}
