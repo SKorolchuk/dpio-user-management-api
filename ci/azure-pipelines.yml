@@ -175,7 +175,7 @@ stages:
 
             - script: >-
                 helm upgrade user-management-api ./
-                --install --wait --verify
+                --install --wait
                 --create-namespace --cleanup-on-fail
                 --namespace=$(namespace)
                 --set image.name=$(harbor_endpoint)/dpio-user-management-api
