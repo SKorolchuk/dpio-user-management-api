@@ -1,8 +1,7 @@
 name: Deeproxio.UserManagement.API-$(Date:yyyyMMdd)$(Rev:.r)
 
 trigger:
-  - "master"
-  - "develop"
+  - "*"
 
 pool: Development
 
@@ -124,12 +123,7 @@ stages:
   - stage: 'Local'
     displayName: 'Deploy to dpio-local environment'
     dependsOn: Build
-    condition: |
-      and
-      (
-        succeeded(),
-        eq(variables['Build.SourceBranchName'], 'develop')
-      )
+    condition: succeeded()
     jobs:
     - deployment: Deploy
       pool: Development
@@ -181,37 +175,90 @@ stages:
                 --set image.name=$(harbor_endpoint)/dpio-user-management-api
                 --set image.tag=$(ciImageTag)
                 --set image.pullPolicy=IfNotPresent
-                --set image.pullSecrets=[{name:"$(imagePullSecretName)"}]
+                --set image.pullSecrets[0].name=$(imagePullSecretName)
                 --set migration.image.name=$(harbor_endpoint)/dpio-user-management-api-db-migration
                 --set migration.image.tag=$(ciImageTag)
                 --set migration.image.pullPolicy=IfNotPresent
-                --set migration.image.pullSecrets=[{name:"$(imagePullSecretName)"}]
+                --set migration.image.pullSecrets[0].name=$(imagePullSecretName)
                 --set secretKey=$(secretKey)
                 --set jwt.issuer=http://$(host)
                 --set ingress.hosts[0].host=$(host)
+                --set ingress.hosts[0].paths[0].path=/authorize(/^|^$)(.*)
               workingDirectory: dpio-user-management-api
               displayName: "Install/Upgrade Helm Chart release in $(namespace) K8s namespace"
 
+  - stage: 'Staging'
+    displayName: 'Deploy to dpio-staging environment'
+    dependsOn: Local
+    condition: |
+      and
+      (
+        succeeded(),
+        or
+        (
+          eq(variables['Build.SourceBranchName'], 'develop'),
+          eq(variables['Build.SourceBranchName'], 'master')
+        )
+      )
+    jobs:
+    - deployment: Deploy
+      pool: Development
+      environment: dpio-staging
+      variables:
+      - group: dpio-staging-settings
+      strategy:
+        runOnce:
+          deploy:
+            steps:
 
-  # - stage: 'Staging'
-  #   displayName: 'Deploy to the staging environment'
-  #   dependsOn: Local
-  #   jobs:
-  #   - deployment: Deploy
-  #     pool:
-  #       vmImage: 'ubuntu-18.04'
-  #     environment: staging
-  #     variables:
-  #     - group: 'Release'
-  #     strategy:
-  #       runOnce:
-  #         deploy:
-  #           steps:
-  #           - download: current
-  #             artifact: drop
-  #           - task: AzureWebApp@1
-  #             displayName: 'Azure App Service Deploy: website'
-  #             inputs:
-  #               azureSubscription: 'Resource Manager - Tailspin - Space Game'
-  #               appName: '$(WebAppNameStaging)'
-  #               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
+            - download: current
+              artifact: drop
+
+            - script: >-
+                helm registry login
+                -u $(harbor_username)
+                -p $(harbor_password)
+                $(harbor_endpoint)
+              displayName: 'helm login (Local Harbor Registry)'
+
+            - script: >-
+                helm chart pull
+                $(harbor_endpoint)/$(helmRepositoryName):$(ciImageTag)
+              displayName: 'Pull Helm Chart from Local Harbor Registry'
+
+            - script: >-
+                helm chart export
+                $(harbor_endpoint)/$(helmRepositoryName):$(ciImageTag)
+              displayName: 'Unpack Helm Chart'
+
+            - script: 'helm dependency update && helm dependency build && helm package .'
+              workingDirectory: dpio-user-management-api
+              displayName: 'Download dependencies and create Helm deployment package'
+
+            - script: >-
+                kubectl create secret docker-registry $(imagePullSecretName)
+                --docker-server=$(harbor_endpoint)
+                --docker-username=$(harbor_username)
+                --docker-password=$(harbor_password)
+                --dry-run -o yaml | kubectl apply -f -
+              displayName: "Create/Update Docker Registry Pull Secret for Kubernetes Cluster"
+
+            - script: >-
+                helm upgrade user-management-api ./
+                --install --wait
+                --create-namespace --cleanup-on-fail
+                --namespace=$(namespace)
+                --set image.name=$(harbor_endpoint)/dpio-user-management-api
+                --set image.tag=$(ciImageTag)
+                --set image.pullPolicy=IfNotPresent
+                --set image.pullSecrets[0].name=$(imagePullSecretName)
+                --set migration.image.name=$(harbor_endpoint)/dpio-user-management-api-db-migration
+                --set migration.image.tag=$(ciImageTag)
+                --set migration.image.pullPolicy=IfNotPresent
+                --set migration.image.pullSecrets[0].name=$(imagePullSecretName)
+                --set secretKey=$(secretKey)
+                --set jwt.issuer=http://$(host)
+                --set ingress.hosts[0].host=$(host)
+                --set ingress.hosts[0].paths[0].path=/authorize(/^|^$)(.*)
+              workingDirectory: dpio-user-management-api
+              displayName: "Install/Upgrade Helm Chart release in $(namespace) K8s namespace"
