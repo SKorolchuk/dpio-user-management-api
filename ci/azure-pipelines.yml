@@ -12,6 +12,8 @@ variables:
   value: 'Release'
 - name: ciImageTag
   value: 'ci-$(Build.BuildId)'
+- name: helmRepositoryName
+  value: 'dpio-user-management-api-chart'
 
 stages:
   - stage: 'Build'
@@ -28,27 +30,54 @@ stages:
         displayName: 'Use .NET Core SDK $(dotnetSdkVersion)'
         inputs:
           version: '$(dotnetSdkVersion)'
+          performMultiLevelLookup: true
 
       - task: DotNetCoreCLI@2
         displayName: 'Restore project dependencies'
         inputs:
           command: 'restore'
           projects: '**/*.csproj'
-  
+
       - task: DotNetCoreCLI@2
-        displayName: 'Build the project - $(buildConfiguration)'
+        displayName: 'Build Deeproxio.UserManagement.API - $(buildConfiguration)'
         inputs:
           command: 'build'
           arguments: '--no-restore --configuration $(buildConfiguration)'
-          projects: '**/*.csproj'
+          projects: '**/Deeproxio.UserManagement.API.csproj'
 
-      - script: docker build -f ./Deeproxio.UserManagement.API/Dockerfile -t $(harbor_endpoint)/dpio-user-management-api:latest -t $(harbor_endpoint)/dpio-user-management-api:$(ciImageTag) .
+      - task: DotNetCoreCLI@2
+        displayName: 'Run Unit Tests'
+        inputs:
+          command: test
+          projects: '**/*Tests/*.csproj'
+          arguments: '--configuration Debug --collect "Code coverage"'
+
+      - task: DotNetCoreCLI@2
+        displayName: 'Publish Deeproxio.UserManagement.API - $(buildConfiguration)'
+        inputs:
+          command: 'publish'
+          publishWebProjects: True
+          arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+          projects: '**/Deeproxio.UserManagement.API.csproj'
+          zipAfterPublish: True
+
+      - script: >-
+          docker build -f ./Deeproxio.UserManagement.API/Dockerfile
+          -t $(harbor_endpoint)/dpio-user-management-api:latest
+          -t $(harbor_endpoint)/dpio-user-management-api:$(ciImageTag) .
         displayName: 'docker build (API)'
 
-      - script: docker build -f ./Deeproxio.Persistence.Identity.Migration/Dockerfile -t $(harbor_endpoint)/dpio-user-management-api-db-migration:latest -t $(harbor_endpoint)/dpio-user-management-api-db-migration:$(ciImageTag) .
+      - script: >-
+          docker build -f ./Deeproxio.Persistence.Identity.Migration/Dockerfile
+          -t $(harbor_endpoint)/dpio-user-management-api-db-migration:latest
+          -t $(harbor_endpoint)/dpio-user-management-api-db-migration:$(ciImageTag) .
         displayName: 'docker build (Migration Job)'
 
-      - script: docker login -u $(harbor_username) -p $(harbor_password) $(harbor_endpoint)
+      - script: >-
+          docker login
+          -u $(harbor_username)
+          -p $(harbor_password)
+          $(harbor_endpoint)
         displayName: 'docker login (Local Harbor Registry)'
 
       - script: docker push $(harbor_endpoint)/dpio-user-management-api
@@ -57,44 +86,112 @@ stages:
       - script: docker push $(harbor_endpoint)/dpio-user-management-api-db-migration
         displayName: 'docker push (Migration Job)'
 
-      - task: HelmDeploy@0
-        displayName: Helm package
-        inputs:
-          command: 'package'
-          chartPath: 'chart/dpio-user-management-api'
-          updateDependency: true
+      - script: >-
+          helm lint ./chart/dpio-user-management-api
+          --debug
+          --logtostderr
+        displayName: 'Helm Chart static analysis'
+      
+      - script: >-
+          helm package ./chart/dpio-user-management-api
+          --logtostderr
+          --dependency-update
+          --destination $(Build.ArtifactStagingDirectory)
+        displayName: 'Helm Chart package build'
+
+      - script: >-
+          helm registry login
+          -u $(harbor_username)
+          -p $(harbor_password)
+          $(harbor_endpoint)
+        displayName: 'helm login (Local Harbor Registry)'
+
+      - script: >-
+          helm chart save
+          ./chart/dpio-user-management-api
+          $(harbor_endpoint)/$(helmRepositoryName):$(ciImageTag)
+        displayName: 'Save Helm Chart to Local Harbor Registry'
+
+      - script: >-
+          helm chart push
+          $(harbor_endpoint)/$(helmRepositoryName):$(ciImageTag)
+        displayName: 'Push Helm Chart to Local Harbor Registry'
 
       - publish: '$(Build.ArtifactStagingDirectory)'
+        displayName: 'Upload Build Artifacts'
         artifact: drop
   
-  # - stage: 'Local'
-  #   displayName: 'Deploy to the local environment'
-  #   dependsOn: Build
-  #   condition: |
-  #     and
-  #     (
-  #       succeeded(),
-  #       eq(variables['Build.SourceBranchName'], variables['releaseBranchName'])
-  #     )
-  #   jobs:
-  #   - deployment: Deploy
-  #     pool:
-  #       vmImage: 'ubuntu-18.04'
-  #     environment: dev
-  #     variables:
-  #     - group: Release
-  #     strategy:
-  #       runOnce:
-  #         deploy:
-  #           steps:
-  #           - download: current
-  #             artifact: drop
-  #           - task: AzureWebApp@1
-  #             displayName: 'Azure App Service Deploy: website'
-  #             inputs:
-  #               azureSubscription: 'Resource Manager - Tailspin - Space Game'
-  #               appName: '$(WebAppNameDev)'
-  #               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
+  - stage: 'Local'
+    displayName: 'Deploy to dpio-local environment'
+    dependsOn: Build
+    condition: |
+      and
+      (
+        succeeded(),
+        eq(variables['Build.SourceBranchName'], 'develop')
+      )
+    jobs:
+    - deployment: Deploy
+      pool: Development
+      environment: dpio-local
+      variables:
+      - group: dpio-local-settings
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+
+            - download: current
+              artifact: drop
+
+            - script: >-
+                helm registry login
+                -u $(harbor_username)
+                -p $(harbor_password)
+                $(harbor_endpoint)
+              displayName: 'helm login (Local Harbor Registry)'
+
+            - script: >-
+                helm chart pull
+                $(harbor_endpoint)/$(helmRepositoryName):$(ciImageTag)
+              displayName: 'Pull Helm Chart from Local Harbor Registry'
+
+            - script: >-
+                helm chart export
+                $(harbor_endpoint)/$(helmRepositoryName):$(ciImageTag)
+              displayName: 'Unpack Helm Chart'
+
+            - script: 'helm dependency update && helm dependency build && helm package .'
+              workingDirectory: dpio-user-management-api
+              displayName: 'Download dependencies and create Helm deployment package'
+
+            - script: >-
+                kubectl create secret docker-registry $(imagePullSecretName)
+                --docker-server=$(harbor_endpoint)
+                --docker-username=$(harbor_username)
+                --docker-password=$(harbor_password)
+                --dry-run -o yaml | kubectl apply -f -
+              displayName: "Create/Update Docker Registry Pull Secret for Kubernetes Cluster"
+
+            - script: >-
+                helm upgrade user-management-api ./
+                --install --wait --verify
+                --create-namespace --cleanup-on-fail
+                --namespace=$(namespace)
+                --set image.name=$(harbor_endpoint)/dpio-user-management-api
+                --set image.tag=$(ciImageTag)
+                --set image.pullPolicy=IfNotPresent
+                --set image.pullSecrets=[{name:"$(imagePullSecretName)"}]
+                --set migration.image.name=$(harbor_endpoint)/dpio-user-management-api-db-migration
+                --set migration.image.tag=$(ciImageTag)
+                --set migration.image.pullPolicy=IfNotPresent
+                --set migration.image.pullSecrets=[{name:"$(imagePullSecretName)"}]
+                --set secretKey=$(secretKey)
+                --set jwt.issuer=http://$(host)
+                --set ingress.hosts[0].host=$(host)
+              workingDirectory: dpio-user-management-api
+              displayName: "Install/Upgrade Helm Chart release in $(namespace) K8s namespace"
+
 
   # - stage: 'Staging'
   #   displayName: 'Deploy to the staging environment'
