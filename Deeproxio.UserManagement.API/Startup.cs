@@ -49,9 +49,9 @@ namespace Deeproxio.UserManagement.API
             services.AddIndentityServerDependencies(Configuration);
 
             services.AddHealthChecks()
-                .AddDbContextCheck<PlatformIdentityDbContext>(nameof(PlatformIdentityDbContext), HealthStatus.Unhealthy)
-                .AddDbContextCheck<PersistedGrantStoreDbContext>(nameof(PersistedGrantStoreDbContext), HealthStatus.Unhealthy)
-                .AddDbContextCheck<ConfigurationStoreDbContext>(nameof(ConfigurationStoreDbContext), HealthStatus.Unhealthy);
+                .AddDbContextCheck<PlatformIdentityDbContext>(nameof(PlatformIdentityDbContext), HealthStatus.Unhealthy, tags: new[] { "DB" })
+                .AddDbContextCheck<PersistedGrantStoreDbContext>(nameof(PersistedGrantStoreDbContext), HealthStatus.Unhealthy, tags: new[] { "DB" })
+                .AddDbContextCheck<ConfigurationStoreDbContext>(nameof(ConfigurationStoreDbContext), HealthStatus.Unhealthy, tags: new[] { "DB" });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -101,6 +101,7 @@ namespace Deeproxio.UserManagement.API
 
                 endpoints.MapHealthChecks("/ready", new HealthCheckOptions()
                 {
+                    Predicate = (check) => !check.Tags.Contains("DB"),
                     // The following StatusCodes are the default assignments for
                     // the HealthCheckStatus properties.
                     ResultStatusCodes =
@@ -112,6 +113,20 @@ namespace Deeproxio.UserManagement.API
                     // The default value is false.
                     AllowCachingResponses = false
                 }).WithDisplayName("User Management API Health Check");
+
+                endpoints.MapHealthChecks("/ready/business", new HealthCheckOptions()
+                {
+                    // The following StatusCodes are the default assignments for
+                    // the HealthCheckStatus properties.
+                    ResultStatusCodes =
+                    {
+                        [HealthStatus.Healthy] = StatusCodes.Status200OK,
+                        [HealthStatus.Degraded] = StatusCodes.Status503ServiceUnavailable,
+                        [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
+                    },
+                    // The default value is false.
+                    AllowCachingResponses = false
+                }).WithDisplayName("User Management API Business Health Check");
             });
         }
     }

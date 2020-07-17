@@ -85,16 +85,16 @@ spec:
             httpGet:
               path: /ready
               port: http
-            initialDelaySeconds: 60
-            periodSeconds: 30
-            timeoutSeconds: 15
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /ready
               port: http
-            initialDelaySeconds: 120
+            initialDelaySeconds: 10
             periodSeconds: 15
-            timeoutSeconds: 10
+            timeoutSeconds: 5
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
     {{- with .Values.nodeSelector }}
