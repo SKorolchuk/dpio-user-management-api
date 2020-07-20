@@ -32,39 +32,44 @@ stages:
       steps:
 
       - task: UseDotNet@2
-        displayName: 'Use .NET Core SDK $(dotnetSdkVersion)'
         inputs:
           version: '$(dotnetSdkVersion)'
           performMultiLevelLookup: true
+        displayName: 'Use .NET Core SDK $(dotnetSdkVersion)'
 
       - task: DotNetCoreCLI@2
-        displayName: 'Restore project dependencies'
         inputs:
           command: 'restore'
           projects: '**/*.csproj'
+        displayName: 'Restore NuGet dependencies'
 
       - task: DotNetCoreCLI@2
-        displayName: 'Build Deeproxio.UserManagement.API - $(buildConfiguration)'
         inputs:
           command: 'build'
           arguments: '--no-restore --configuration $(buildConfiguration)'
-          projects: '**/Deeproxio.UserManagement.API.csproj'
+          projects: '**/*.csproj'
+        displayName: 'Build Solution - $(buildConfiguration)'
 
       - task: DotNetCoreCLI@2
-        displayName: 'Run Unit Tests'
         inputs:
           command: test
           projects: '**/*Tests/*.csproj'
           arguments: '--configuration Debug --collect "Code coverage"'
+        displayName: 'Run Unit Tests'
 
       - task: DotNetCoreCLI@2
-        displayName: 'Publish Deeproxio.UserManagement.API - $(buildConfiguration)'
         inputs:
           command: 'publish'
           publishWebProjects: True
-          arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+          arguments: '--configuration $(BuildConfiguration) --output publish'
           projects: '**/Deeproxio.UserManagement.API.csproj'
-          zipAfterPublish: True
+        displayName: 'Publish Deeproxio.UserManagement.API - $(buildConfiguration)'
+
+      - task: PublishBuildArtifacts@1
+        inputs:
+          PathtoPublish: publish
+          ArtifactName: Deeproxio.UserManagement.API
+        displayName: Publish Deeproxio.UserManagement.API Artifact
 
       - script: >-
           docker build -f ./Deeproxio.UserManagement.API/Dockerfile
@@ -88,12 +93,12 @@ stages:
       - script: >-
           docker push $(harbor_endpoint)/$(serviceImageName):$(ciImageTag) &&
           docker push $(harbor_endpoint)/$(migrationImageName):latest
-        displayName: 'docker push (API)'
+        displayName: 'push docker image (API)'
 
       - script: >-
           docker push $(harbor_endpoint)/$(migrationImageName):$(ciImageTag) &&
           docker push $(harbor_endpoint)/$(migrationImageName):latest
-        displayName: 'docker push (Migration Job)'
+        displayName: 'push docker image (Migration Job)'
 
       - script: >-
           helm lint ./chart/$(serviceImageName)
@@ -128,8 +133,8 @@ stages:
         displayName: 'Push Helm Chart to Local Harbor Registry'
 
       - publish: '$(Build.ArtifactStagingDirectory)'
-        displayName: 'Upload Build Artifacts'
-        artifact: drop
+        artifact: $(serviceImageName).helm-chart
+        displayName: 'Upload Helm Build Artifacts'
   
   - stage: 'Local'
     displayName: 'Deploy to dpio-local environment'
@@ -153,15 +158,15 @@ stages:
                 harbor_password: $(harbor_password)
                 harbor_endpoint: $(harbor_endpoint)
                 helmRepositoryName: $(helmRepositoryName)
-                ciImageTag: $(ciImageTag)
                 serviceImageName: $(serviceImageName)
+                migrationImageName: $(migrationImageName)
+                ciImageTag: $(ciImageTag)
                 imagePullSecretName: $(imagePullSecretName)
-                releaseName: $(releaseName)
                 namespace: $(namespace)
-                secretKey: $(secretKey)
                 host: $(host)
                 tokenServicePath: $(tokenServicePath)
-                migrationImageName: $(migrationImageName)
+                secretKey: $(secretKey)
+                releaseName: $(releaseName)
 
 
   - stage: 'Staging'
@@ -195,12 +200,12 @@ stages:
                 harbor_password: $(harbor_password)
                 harbor_endpoint: $(harbor_endpoint)
                 helmRepositoryName: $(helmRepositoryName)
-                ciImageTag: $(ciImageTag)
                 serviceImageName: $(serviceImageName)
+                migrationImageName: $(migrationImageName)
+                ciImageTag: $(ciImageTag)
                 imagePullSecretName: $(imagePullSecretName)
-                releaseName: $(releaseName)
                 namespace: $(namespace)
-                secretKey: $(secretKey)
                 host: $(host)
                 tokenServicePath: $(tokenServicePath)
-                migrationImageName: $(migrationImageName)
+                secretKey: $(secretKey)
+                releaseName: $(releaseName)
