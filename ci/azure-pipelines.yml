@@ -147,63 +147,22 @@ stages:
           deploy:
             steps:
 
-            - download: current
-              artifact: drop
+            - template: ci/stage-deployment.yml
+              parameters:
+                harbor_username: $(harbor_username)
+                harbor_password: $(harbor_password)
+                harbor_endpoint: $(harbor_endpoint)
+                helmRepositoryName: $(helmRepositoryName)
+                ciImageTag: $(ciImageTag)
+                serviceImageName: $(serviceImageName)
+                imagePullSecretName: $(imagePullSecretName)
+                releaseName: $(releaseName)
+                namespace: $(namespace)
+                secretKey: $(secretKey)
+                host: $(host)
+                tokenServicePath: $(tokenServicePath)
+                migrationImageName: $(migrationImageName)
 
-            - script: >-
-                helm registry login
-                -u $(harbor_username)
-                -p $(harbor_password)
-                $(harbor_endpoint)
-              displayName: 'helm login (Local Harbor Registry)'
-
-            - script: >-
-                helm chart pull
-                $(harbor_endpoint)/$(helmRepositoryName):$(ciImageTag)
-              displayName: 'Pull Helm Chart from Local Harbor Registry'
-
-            - script: >-
-                helm chart export
-                $(harbor_endpoint)/$(helmRepositoryName):$(ciImageTag)
-              displayName: 'Unpack Helm Chart'
-
-            - script: >-
-                helm dependency update &&
-                helm dependency build &&
-                helm package .
-                --logtostderr
-                --dependency-update
-                --app-version $(ciImageTag)'
-              workingDirectory: $(serviceImageName)
-              displayName: 'Download dependencies and create Helm deployment package'
-
-            - script: >-
-                kubectl create secret docker-registry $(imagePullSecretName)
-                --docker-server=$(harbor_endpoint)
-                --docker-username=$(harbor_username)
-                --docker-password=$(harbor_password)
-                --dry-run -o yaml | kubectl apply -f -
-              displayName: "Create/Update Docker Registry Pull Secret for Kubernetes Cluster"
-
-            - script: >-
-                helm upgrade user-management-api ./
-                --install --wait
-                --create-namespace --cleanup-on-fail
-                --namespace=$(namespace)
-                --set image.name=$(harbor_endpoint)/$(serviceImageName)
-                --set image.tag=$(ciImageTag)
-                --set image.pullPolicy=IfNotPresent
-                --set image.pullSecrets[0].name=$(imagePullSecretName)
-                --set migration.image.name=$(harbor_endpoint)/$(migrationImageName)
-                --set migration.image.tag=$(ciImageTag)
-                --set migration.image.pullPolicy=IfNotPresent
-                --set migration.image.pullSecrets[0].name=$(imagePullSecretName)
-                --set secretKey=$(secretKey)
-                --set jwt.issuer=http://$(host)
-                --set ingress.hosts[0].host=$(host)
-                --set ingress.hosts[0].paths[0].path=$(tokenServicePath)
-              workingDirectory: $(serviceImageName)
-              displayName: "Install/Upgrade Helm Chart release in $(namespace) K8s namespace"
 
   - stage: 'Staging'
     displayName: 'Deploy to dpio-staging environment'
@@ -230,60 +189,18 @@ stages:
           deploy:
             steps:
 
-            - download: current
-              artifact: drop
-
-            - script: >-
-                helm registry login
-                -u $(harbor_username)
-                -p $(harbor_password)
-                $(harbor_endpoint)
-              displayName: 'helm login (Local Harbor Registry)'
-
-            - script: >-
-                helm chart pull
-                $(harbor_endpoint)/$(helmRepositoryName):$(ciImageTag)
-              displayName: 'Pull Helm Chart from Local Harbor Registry'
-
-            - script: >-
-                helm chart export
-                $(harbor_endpoint)/$(helmRepositoryName):$(ciImageTag)
-              displayName: 'Unpack Helm Chart'
-
-            - script: >-
-                helm dependency update &&
-                helm dependency build &&
-                helm package .
-                --logtostderr
-                --dependency-update
-                --app-version $(ciImageTag)'
-              workingDirectory: $(serviceImageName)
-              displayName: 'Download dependencies and create Helm deployment package'
-
-            - script: >-
-                kubectl create secret docker-registry $(imagePullSecretName)
-                --docker-server=$(harbor_endpoint)
-                --docker-username=$(harbor_username)
-                --docker-password=$(harbor_password)
-                --dry-run -o yaml | kubectl apply -f -
-              displayName: "Create/Update Docker Registry Pull Secret for Kubernetes Cluster"
-
-            - script: >-
-                helm upgrade user-management-api ./
-                --install --wait
-                --create-namespace --cleanup-on-fail
-                --namespace=$(namespace)
-                --set image.name=$(harbor_endpoint)/$(serviceImageName)
-                --set image.tag=$(ciImageTag)
-                --set image.pullPolicy=IfNotPresent
-                --set image.pullSecrets[0].name=$(imagePullSecretName)
-                --set migration.image.name=$(harbor_endpoint)/$(migrationImageName)
-                --set migration.image.tag=$(ciImageTag)
-                --set migration.image.pullPolicy=IfNotPresent
-                --set migration.image.pullSecrets[0].name=$(imagePullSecretName)
-                --set secretKey=$(secretKey)
-                --set jwt.issuer=http://$(host)
-                --set ingress.hosts[0].host=$(host)
-                --set ingress.hosts[0].paths[0].path=$(tokenServicePath)
-              workingDirectory: $(serviceImageName)
-              displayName: "Install/Upgrade Helm Chart release in $(namespace) K8s namespace"
+            - template: ci/stage-deployment.yml
+              parameters:
+                harbor_username: $(harbor_username)
+                harbor_password: $(harbor_password)
+                harbor_endpoint: $(harbor_endpoint)
+                helmRepositoryName: $(helmRepositoryName)
+                ciImageTag: $(ciImageTag)
+                serviceImageName: $(serviceImageName)
+                imagePullSecretName: $(imagePullSecretName)
+                releaseName: $(releaseName)
+                namespace: $(namespace)
+                secretKey: $(secretKey)
+                host: $(host)
+                tokenServicePath: $(tokenServicePath)
+                migrationImageName: $(migrationImageName)
