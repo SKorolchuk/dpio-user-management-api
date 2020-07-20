@@ -147,7 +147,7 @@ stages:
           deploy:
             steps:
 
-            - template: ci/stage-deployment.yml
+            - template: stage-deployment.yml
               parameters:
                 harbor_username: $(harbor_username)
                 harbor_password: $(harbor_password)
@@ -189,7 +189,7 @@ stages:
           deploy:
             steps:
 
-            - template: ci/stage-deployment.yml
+            - template: stage-deployment.yml
               parameters:
                 harbor_username: $(harbor_username)
                 harbor_password: $(harbor_password)
