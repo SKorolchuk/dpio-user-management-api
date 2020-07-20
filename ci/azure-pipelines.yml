@@ -13,6 +13,12 @@ variables:
   value: 'ci-$(Build.BuildId)'
 - name: helmRepositoryName
   value: 'dpio-user-management-api-chart'
+- name: serviceImageName
+  value: dpio-user-management-api
+- name: migrationImageName
+  value: dpio-user-management-api-db-migration
+- name: releaseName
+  value: user-management-api
 
 stages:
   - stage: 'Build'
@@ -62,14 +68,14 @@ stages:
 
       - script: >-
           docker build -f ./Deeproxio.UserManagement.API/Dockerfile
-          -t $(harbor_endpoint)/dpio-user-management-api:latest
-          -t $(harbor_endpoint)/dpio-user-management-api:$(ciImageTag) .
+          -t $(harbor_endpoint)/$(serviceImageName):latest
+          -t $(harbor_endpoint)/$(serviceImageName):$(ciImageTag) .
         displayName: 'docker build (API)'
 
       - script: >-
           docker build -f ./Deeproxio.Persistence.Identity.Migration/Dockerfile
-          -t $(harbor_endpoint)/dpio-user-management-api-db-migration:latest
-          -t $(harbor_endpoint)/dpio-user-management-api-db-migration:$(ciImageTag) .
+          -t $(harbor_endpoint)/$(migrationImageName):latest
+          -t $(harbor_endpoint)/$(migrationImageName):$(ciImageTag) .
         displayName: 'docker build (Migration Job)'
 
       - script: >-
@@ -79,22 +85,27 @@ stages:
           $(harbor_endpoint)
         displayName: 'docker login (Local Harbor Registry)'
 
-      - script: docker push $(harbor_endpoint)/dpio-user-management-api
+      - script: >-
+          docker push $(harbor_endpoint)/$(serviceImageName):$(ciImageTag) &&
+          docker push $(harbor_endpoint)/$(migrationImageName):latest
         displayName: 'docker push (API)'
 
-      - script: docker push $(harbor_endpoint)/dpio-user-management-api-db-migration
+      - script: >-
+          docker push $(harbor_endpoint)/$(migrationImageName):$(ciImageTag) &&
+          docker push $(harbor_endpoint)/$(migrationImageName):latest
         displayName: 'docker push (Migration Job)'
 
       - script: >-
-          helm lint ./chart/dpio-user-management-api
+          helm lint ./chart/$(serviceImageName)
           --debug
           --logtostderr
         displayName: 'Helm Chart static analysis'
       
       - script: >-
-          helm package ./chart/dpio-user-management-api
+          helm package ./chart/$(serviceImageName)
           --logtostderr
           --dependency-update
+          --app-version $(ciImageTag)
           --destination $(Build.ArtifactStagingDirectory)
         displayName: 'Helm Chart package build'
 
@@ -107,7 +118,7 @@ stages:
 
       - script: >-
           helm chart save
-          ./chart/dpio-user-management-api
+          ./chart/$(serviceImageName)
           $(harbor_endpoint)/$(helmRepositoryName):$(ciImageTag)
         displayName: 'Save Helm Chart to Local Harbor Registry'
 
@@ -130,6 +141,7 @@ stages:
       environment: dpio-local
       variables:
       - group: dpio-local-settings
+      - group: dpio-platform-endpoint-paths
       strategy:
         runOnce:
           deploy:
@@ -155,8 +167,14 @@ stages:
                 $(harbor_endpoint)/$(helmRepositoryName):$(ciImageTag)
               displayName: 'Unpack Helm Chart'
 
-            - script: 'helm dependency update && helm dependency build && helm package .'
-              workingDirectory: dpio-user-management-api
+            - script: >-
+                helm dependency update &&
+                helm dependency build &&
+                helm package .
+                --logtostderr
+                --dependency-update
+                --app-version $(ciImageTag)'
+              workingDirectory: $(serviceImageName)
               displayName: 'Download dependencies and create Helm deployment package'
 
             - script: >-
@@ -172,19 +190,19 @@ stages:
                 --install --wait
                 --create-namespace --cleanup-on-fail
                 --namespace=$(namespace)
-                --set image.name=$(harbor_endpoint)/dpio-user-management-api
+                --set image.name=$(harbor_endpoint)/$(serviceImageName)
                 --set image.tag=$(ciImageTag)
                 --set image.pullPolicy=IfNotPresent
                 --set image.pullSecrets[0].name=$(imagePullSecretName)
-                --set migration.image.name=$(harbor_endpoint)/dpio-user-management-api-db-migration
+                --set migration.image.name=$(harbor_endpoint)/$(migrationImageName)
                 --set migration.image.tag=$(ciImageTag)
                 --set migration.image.pullPolicy=IfNotPresent
                 --set migration.image.pullSecrets[0].name=$(imagePullSecretName)
                 --set secretKey=$(secretKey)
                 --set jwt.issuer=http://$(host)
                 --set ingress.hosts[0].host=$(host)
-                --set ingress.hosts[0].paths[0].path=/authorize(/^|^$)(.*)
-              workingDirectory: dpio-user-management-api
+                --set ingress.hosts[0].paths[0].path=$(tokenServicePath)
+              workingDirectory: $(serviceImageName)
               displayName: "Install/Upgrade Helm Chart release in $(namespace) K8s namespace"
 
   - stage: 'Staging'
@@ -206,6 +224,7 @@ stages:
       environment: dpio-staging
       variables:
       - group: dpio-staging-settings
+      - group: dpio-platform-endpoint-paths
       strategy:
         runOnce:
           deploy:
@@ -231,8 +250,14 @@ stages:
                 $(harbor_endpoint)/$(helmRepositoryName):$(ciImageTag)
               displayName: 'Unpack Helm Chart'
 
-            - script: 'helm dependency update && helm dependency build && helm package .'
-              workingDirectory: dpio-user-management-api
+            - script: >-
+                helm dependency update &&
+                helm dependency build &&
+                helm package .
+                --logtostderr
+                --dependency-update
+                --app-version $(ciImageTag)'
+              workingDirectory: $(serviceImageName)
               displayName: 'Download dependencies and create Helm deployment package'
 
             - script: >-
@@ -248,17 +273,17 @@ stages:
                 --install --wait
                 --create-namespace --cleanup-on-fail
                 --namespace=$(namespace)
-                --set image.name=$(harbor_endpoint)/dpio-user-management-api
+                --set image.name=$(harbor_endpoint)/$(serviceImageName)
                 --set image.tag=$(ciImageTag)
                 --set image.pullPolicy=IfNotPresent
                 --set image.pullSecrets[0].name=$(imagePullSecretName)
-                --set migration.image.name=$(harbor_endpoint)/dpio-user-management-api-db-migration
+                --set migration.image.name=$(harbor_endpoint)/$(migrationImageName)
                 --set migration.image.tag=$(ciImageTag)
                 --set migration.image.pullPolicy=IfNotPresent
                 --set migration.image.pullSecrets[0].name=$(imagePullSecretName)
                 --set secretKey=$(secretKey)
                 --set jwt.issuer=http://$(host)
                 --set ingress.hosts[0].host=$(host)
-                --set ingress.hosts[0].paths[0].path=/authorize(/^|^$)(.*)
-              workingDirectory: dpio-user-management-api
+                --set ingress.hosts[0].paths[0].path=$(tokenServicePath)
+              workingDirectory: $(serviceImageName)
               displayName: "Install/Upgrade Helm Chart release in $(namespace) K8s namespace"
