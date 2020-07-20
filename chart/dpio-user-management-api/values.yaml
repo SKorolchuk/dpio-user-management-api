@@ -58,7 +58,6 @@ ingress:
     annotations:
         kubernetes.io/ingress.class: nginx
         kubernetes.io/tls-acme: "true"
-        nginx.org/mergeable-ingress-type: "minion"
         nginx.ingress.kubernetes.io/rewrite-target: /$2
     hosts:
     - host: deeprox.io
